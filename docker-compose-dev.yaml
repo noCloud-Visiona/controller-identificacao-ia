@@ -26,7 +26,6 @@ services:
       - PGADMIN_DEFAULT_PASSWORD=postgres
     ports:
       - "3050:80"
-    restart: always
     networks:
       rede_microsservicos:
         ipv4_address: 172.18.0.3
@@ -37,7 +36,6 @@ services:
     image: jonasrsribeiro/nc-controller-cadastro-autenticacao:develop
     ports:
       - "3000:3000"
-    restart: always
     networks:
       rede_microsservicos:
         ipv4_address: 172.18.0.4
@@ -91,7 +89,6 @@ services:
     image: jonasrsribeiro/nc-controller-identificacao-ia:develop
     ports:
       - "3002:3002"
-    restart: always
     networks:
       rede_microsservicos:
         ipv4_address: 172.18.0.7
@@ -99,6 +96,9 @@ services:
       - pgadmin
       - postgres
       - controller-cadastro-autenticacao
+  #    - controller-preferencia-area
+  #    - controller-obter-imagens
+  #    - controller-conversor
 
   frontend:
     image: jonasrsribeiro/nc-controller-frontend:develop
