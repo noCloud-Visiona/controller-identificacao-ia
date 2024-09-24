@@ -1,7 +1,7 @@
 from ultralytics import YOLO
 from enums import Caminho
 
-def segmentar_imagem(imagem_tratada):
+def segmentar_imagem(image):
     model = YOLO(Caminho.PESO.value)
-    results = model(imagem_tratada)
+    results = model(image)
     return results

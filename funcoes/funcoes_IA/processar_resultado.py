@@ -1,6 +1,8 @@
 import cv2
+import numpy as np
 
-def processar_resultados(results, imagem_tratada):
+
+def processar_resultados(results, image):
     # Processar os resultados
     for result in results:
         for j, mask in enumerate(result.masks.data):
@@ -19,9 +21,12 @@ def processar_resultados(results, imagem_tratada):
             mask_color[mask_img > 0] = [0, 0, 255]  # Cor vermelha onde a máscara é aplicada
 
             # Sobrepor a máscara colorida na imagem original
-            merged_image = cv2.addWeighted(imagem_tratada, 0.7, mask_color, 0.3, 0)  # Ajuste os pesos conforme necessário
+            merged_image = cv2.addWeighted(image, 0.7, mask_color, 0.3, 0)  # Ajuste os pesos conforme necessário
 
             # Salvar a imagem final mesclada
             merged_output_path = "merged_output_with_color.png"
             cv2.imwrite(merged_output_path, merged_image)
+
             print("Merge completo. Imagem salva como 'merged_output_with_color.png'.")
+
+            return output_mask_path, merged_image
