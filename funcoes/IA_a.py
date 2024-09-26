@@ -1,7 +1,7 @@
-import funcoes_IA.tratar_imagem as tratar_imagem
-import funcoes_IA.segmentar_imagem as segmentar_imagem
-import funcoes_IA.porcentagem_nuvem as porcentagem_nuvem
-import funcoes_IA.processar_resultado as processar_resultado
+import funcoes.funcoes_IA.tratar_imagem as tratar_imagem
+import funcoes.funcoes_IA.segmentar_imagem as segmentar_imagem
+import funcoes.funcoes_IA.porcentagem_nuvem as porcentagem_nuvem
+import funcoes.funcoes_IA.processar_resultado as processar_resultado
 
 def IA(image):
     # Tratar a imagem
@@ -13,5 +13,6 @@ def IA(image):
 
     # Calcular a porcentagem da nuvem
     porcentagem = porcentagem_nuvem.porcentagem_nuvem(mask, image)
-    print(porcentagem)
-    return mask
+    
+    # Retornar os três valores necessários
+    return mask, merged_image, porcentagem
