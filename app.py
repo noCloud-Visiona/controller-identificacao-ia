@@ -69,7 +69,7 @@ def predict():
     porcentagem_nuvem = round(porcentagem_nuvem, 2)
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
-    imagem_tratada_json = transforma_imagem_em_json('merged_output_with_color.png')  # Salvar como imagem antes de converter
+    imagem_tratada_json = transforma_imagem_em_json('IA/img_mark_e_merged/merged_output_with_color.png')  # Salvar como imagem antes de converter
 
     # Salvando no firestorm a imagem json
     collection_ref = db.collection("historico_imagens_ia")

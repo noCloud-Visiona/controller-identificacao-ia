@@ -10,7 +10,7 @@ def processar_resultados(results, image):
             mask = cv2.resize(mask, (640, 640))  # Redimensionar a máscara para o tamanho original
 
             # Salvar a máscara como uma imagem em escala de cinza
-            output_mask_path = f"mask_{j}.png"  # Nome do arquivo para a máscara
+            output_mask_path = f"IA/img_mark_e_merged/mask_{j}.png"  # Nome do arquivo para a máscara
             cv2.imwrite(output_mask_path, mask * 255)  # Multiplica por 255 para converter para escala de cinza
 
             # Carregar a máscara salva
@@ -21,7 +21,7 @@ def processar_resultados(results, image):
             mask_color[mask_img > 0] = [0, 0, 255]  # Cor vermelha onde a máscara é aplicada
     
             merged_image = cv2.addWeighted(image, 0.7, mask_color, 0.3, 0) 
-            merged_output_path = "merged_output_with_color.png"
+            merged_output_path = "IA/img_mark_e_merged/merged_output_with_color.png"
             cv2.imwrite(merged_output_path, merged_image)
 
             print("Merge completo. Imagem salva como 'merged_output_with_color.png'.")
