@@ -3,8 +3,8 @@ import funcoes.IA_a as IA_a
 import os
 import datetime
 from funcoes.serializador_de_imagem import transforma_imagem_em_json
-import cv2
 from firebase import db
+
 
 app = Flask(__name__)
 
@@ -101,7 +101,23 @@ def predict():
 
     return jsonify(resposta)
 
-
+@app.route('/historico', methods=['GET'])
+def get_historico():
+    # Referência à coleção
+    collection_ref = db.collection("historico_imagens_ia")
+    
+    # Recuperando todos os documentos da coleção
+    documentos = collection_ref.stream()
+    
+    # Criando uma lista para armazenar os dados
+    historico = []
+    
+    for doc in documentos:
+        # Adicionando os dados de cada documento à lista
+        historico.append(doc.to_dict())
+    
+    # Retornando os dados em formato JSON
+    return jsonify(historico)
 
 if __name__ == '__main__':
     app.run(debug=True)
