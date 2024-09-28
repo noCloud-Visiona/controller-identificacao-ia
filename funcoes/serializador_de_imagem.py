@@ -17,9 +17,16 @@ def transforma_imagem_em_json(resultado_da_imagem):
 
 # Desserializa o JSON de volta para a imagem
 def transforma_json_em_imagem(image_json, output_path):
-    image_data = json.loads(image_json)["image_data"]
-    with open(output_path, "wb") as output_file:
-        output_file.write(base64.b64decode(image_data))
+    try:
+        image_data = json.loads(image_json).get("image_data", "")
+        if not image_data:
+            raise ValueError("Imagem não encontrada no JSON")
+        
+        with open(output_path, "wb") as output_file:
+            output_file.write(base64.b64decode(image_data))
+        return True, "Imagem decodificada com sucesso"
+    except Exception as e:
+        return False, f"Erro ao decodificar a imagem: {str(e)}"
 
 #output_image_path = "(path onde a imagem vai ser salva)"
 #output_image_path = "IA/img/output_image.png"
