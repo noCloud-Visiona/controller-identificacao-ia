@@ -1,7 +1,9 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 import funcoes.IA_a as IA_a
 import os
 import datetime
+import json
+import base64
 from funcoes.serializador_de_imagem import transforma_imagem_em_json
 from firebase import db, bucket
 from datetime import timedelta
@@ -164,6 +166,50 @@ def get_historico(id_usuario):
     
     # Retornando os dados em formato JSON
     return jsonify(historico)
+
+# Rota do Briscese 
+@app.route('/show_image', methods=['POST'])
+def show_image():
+    # Recebe o JSON com a imagem codificada
+    json_data = request.get_json()
+
+    # Chama a função para transformar a imagem codificada em um arquivo PNG
+    success, mensagem = transforma_json_em_imagem(json_data, "IA/img/output_image.png")
+
+    if success:
+        # Retorna a imagem decodificada
+        try:
+            return send_file("IA/img/output_image.png", mimetype='image/png'), 200
+        except FileNotFoundError:
+            return jsonify({"message": "Erro: Imagem não encontrada"}), 404
+    else:
+        # Em caso de erro, retorna a mensagem de erro
+        return jsonify({"message": mensagem}), 400
+
+def transforma_json_em_imagem(image_json, output_path):
+    try:
+        # Aqui, pegamos a imagem da chave "img_tratada"
+        image_data = image_json.get("img_tratada", "")
+        
+        if not image_data:
+            raise ValueError("Imagem não encontrada na chave 'img_tratada' do JSON")
+
+        # Decodificando a imagem Base64
+        missing_padding = len(image_data) % 4
+        if missing_padding:
+            image_data += '=' * (4 - missing_padding)
+
+        with open(output_path, "wb") as output_file:
+            output_file.write(base64.b64decode(image_data))
+
+        return True, "Imagem decodificada com sucesso"
+    except json.JSONDecodeError as json_err:
+        return False, f"Erro ao decodificar JSON: {str(json_err)}"
+    except ValueError as val_err:
+        return False, str(val_err)
+    except Exception as e:
+        return False, f"Erro ao decodificar a imagem: {str(e)}"
+
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
