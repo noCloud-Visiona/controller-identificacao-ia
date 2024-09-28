@@ -1,26 +1,19 @@
-from flask import Flask, request, jsonify
+from flask import Flask, make_response, request, jsonify, send_file
 import funcoes.IA_a as IA_a
 import os
 import datetime
-from funcoes.serializador_de_imagem import transforma_imagem_em_json
+from funcoes.serializador_de_imagem import transforma_imagem_em_json, transforma_json_em_imagem
+import cv2
+import json
+from io import BytesIO
+import base64
+import numpy as np
 from firebase import db
-
 
 app = Flask(__name__)
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    #espera um json ou texto com o atributo id que será o id do usuario
-    id_usuario = None
-
-    if request.is_json:
-        data = request.get_json()
-        id_usuario = data.get('id')
-    else:
-        if 'id' in request.form:
-            id_usuario = request.form['id']
-
-    #espera uma imagem a ser tratada pela IA
     if not request.files:
         return jsonify({'error': 'Nenhuma imagem provida'}), 400
 
@@ -41,23 +34,13 @@ def predict():
 
     print(f"Imagem encontrada: {image_path}")
 
-    imagem_original_json = transforma_imagem_em_json(image_path)
-
     # Aqui estamos garantindo que a função IA retorna três valores
     mask_path, imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
 
-    # Apaga a imagem da pasta local após ter a versão em json
-    supported_formats = {'bmp', 'jpg', 'png', 'tiff', 'mpo', 'webp', 'jpeg', 'dng', 'pfm', 'tif'}
-    for file in os.listdir(image_dir):
-        if file.split('.')[-1].lower() in supported_formats:
-            file_path = os.path.join(image_dir, file)
-            os.remove(file_path)
-
     nome_base = os.path.splitext(imagem.filename)[0]
+    valor_increment = 1  # Ajuste conforme necessário
 
-
-    ### Montagem do json de resposta daqui pra baixo
-
+    id_unico = f"{nome_base}_{valor_increment}"
 
     data_atual = datetime.datetime.now().strftime("%Y-%m-%d")
     hora_atual = datetime.datetime.now().strftime("%H:%M:%S")
@@ -66,38 +49,16 @@ def predict():
     resolucao_imagem = f"{imagem_tratada.shape[1]}x{imagem_tratada.shape[0]}"  # largura x altura
 
     area_visivel_mapa = 100 - porcentagem_nuvem
-    porcentagem_nuvem = round(porcentagem_nuvem, 2)
-    area_visivel_mapa = round(area_visivel_mapa, 2)
 
-    imagem_tratada_json = transforma_imagem_em_json('IA/img_mark_e_merged/merged_output_with_color.png')  # Salvar como imagem antes de converter
-
-    # Count de quantas imagens salvas tem, para acrescentar +1
-    collection_ref = db.collection("historico_imagens_ia")
-    docs = collection_ref.stream()
-    doc_count = sum(1 for _ in docs)
+    imagem_original_json = transforma_imagem_em_json(image_path)
     
-    id_unico = f"{nome_base}_{doc_count}"
-
-    # Salvando no firestorm a imagem json
-    collection_ref = db.collection("historico_imagens_ia")
-    collection_ref.add({
-        "id_usuario": id_usuario,
-        "id": id_unico,
-        "data": data_atual,
-        "hora": hora_atual,
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": None
-        },
-        "resolucao_imagem": resolucao_imagem,
-        "satelite": "CBERS4A",
-        "sensor": "WPM",
-        "percentual_nuvem": porcentagem_nuvem,
-        "area_visivel_mapa": area_visivel_mapa,
-        "imagem": None,
-        "thumbnail": imagem_original_json,
-        "img_tratada": imagem_tratada_json
-    })
+    # Salvando a imagem tratada em um arquivo
+    tratada_path = "IA/img/merged_output_with_color.png"
+    cv2.imwrite(tratada_path, imagem_tratada)
+    
+    # Convertendo a imagem tratada para JSON Base64
+    with open(tratada_path, "rb") as img_file:
+        encoded_string = base64.b64encode(img_file.read()).decode('utf-8')
 
     resposta = {
         "id": id_unico,
@@ -114,11 +75,53 @@ def predict():
         "area_visivel_mapa": area_visivel_mapa,
         "imagem": None,
         "thumbnail": imagem_original_json,
-        "img_tratada": imagem_tratada_json
+        "img_tratada": encoded_string  # Agora a imagem está em Base64 correta
     }
 
     return jsonify(resposta)
 
+@app.route('/show_image', methods=['POST'])
+def show_image():
+    # Recebe o JSON com a imagem codificada
+    json_data = request.get_json()
+
+    # Chama a função para transformar a imagem codificada em um arquivo PNG
+    success, mensagem = transforma_json_em_imagem(json_data, "IA/img/output_image.png")
+
+    if success:
+        # Retorna a imagem decodificada
+        try:
+            return send_file("IA/img/output_image.png", mimetype='image/png'), 200
+        except FileNotFoundError:
+            return jsonify({"message": "Erro: Imagem não encontrada"}), 404
+    else:
+        # Em caso de erro, retorna a mensagem de erro
+        return jsonify({"message": mensagem}), 400
+
+def transforma_json_em_imagem(image_json, output_path):
+    try:
+        # Aqui, pegamos a imagem da chave "img_tratada"
+        image_data = image_json.get("img_tratada", "")
+        
+        if not image_data:
+            raise ValueError("Imagem não encontrada na chave 'img_tratada' do JSON")
+
+        # Decodificando a imagem Base64
+        missing_padding = len(image_data) % 4
+        if missing_padding:
+            image_data += '=' * (4 - missing_padding)
+
+        with open(output_path, "wb") as output_file:
+            output_file.write(base64.b64decode(image_data))
+
+        return True, "Imagem decodificada com sucesso"
+    except json.JSONDecodeError as json_err:
+        return False, f"Erro ao decodificar JSON: {str(json_err)}"
+    except ValueError as val_err:
+        return False, str(val_err)
+    except Exception as e:
+        return False, f"Erro ao decodificar a imagem: {str(e)}"
+        
 @app.route('/historico/<id_usuario>', methods=['GET'])
 def get_historico(id_usuario):
     collection_ref = db.collection("historico_imagens_ia")
