@@ -2,6 +2,7 @@ import funcoes.funcoes_IA.tratar_imagem as tratar_imagem
 import funcoes.funcoes_IA.segmentar_imagem as segmentar_imagem
 import funcoes.funcoes_IA.porcentagem_nuvem as porcentagem_nuvem
 import funcoes.funcoes_IA.processar_resultado as processar_resultado
+import os
 
 def IA(image):
     # Tratar a imagem

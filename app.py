@@ -8,6 +8,7 @@ import json
 from io import BytesIO
 import base64
 import numpy as np
+from firebase import db
 
 app = Flask(__name__)
 
@@ -120,6 +121,23 @@ def transforma_json_em_imagem(image_json, output_path):
         return False, str(val_err)
     except Exception as e:
         return False, f"Erro ao decodificar a imagem: {str(e)}"
+        
+@app.route('/historico/<id_usuario>', methods=['GET'])
+def get_historico(id_usuario):
+    collection_ref = db.collection("historico_imagens_ia")
+    
+    # Recuperando os documentos que têm o campo "id_usuario" igual ao valor passado
+    documentos = collection_ref.where("id_usuario", "==", id_usuario).stream()
+    
+    # Criando uma lista para armazenar os dados
+    historico = []
+    
+    for doc in documentos:
+        # Adicionando os dados de cada documento à lista
+        historico.append(doc.to_dict())
+    
+    # Retornando os dados em formato JSON
+    return jsonify(historico)
 
 if __name__ == '__main__':
     app.run(debug=True)
