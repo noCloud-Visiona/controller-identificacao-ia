@@ -1,6 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import firestore, storage
 
 # Campos da credencial para o firebase não desativar a chave sozinho
 cred_type = "servi" + "ce_account"
@@ -34,7 +34,10 @@ credencial = {
 cred = credentials.Certificate(credencial)
 
 # Inicialize o app do Firebase Admin SDK.
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'nocloud-90bb5.appspot.com'  # Substitua pelo nome real do bucket
+})
 
 # Crie um cliente do Firestore.
 db = firestore.client()
+bucket = storage.bucket()
