@@ -87,13 +87,16 @@ def predict(id_usuario):
     blob = bucket.blob(f"imagens/original/{nome_base}_{doc_count}")
     #pega o path das imagens e salva elas
     blob.upload_from_filename(image_path)
+    #tira o tempo de expiração
+    blob.make_public()
     #retorna a url da imagem salva para ser salva no json do firestorm e devolvida na resposta
-    imagem_original_url = blob.generate_signed_url(timedelta(seconds=300), method='GET')
+    imagem_original_url = blob.public_url
 
     #mesma lógica que os comentários de cima
     blob = bucket.blob(f"imagens/tratada/{nome_base}_{doc_count}")
     blob.upload_from_filename(imagem_IA_path)
-    imagem_tratada_pela_IA_url = blob.generate_signed_url(timedelta(seconds=300), method='GET')
+    blob.make_public()
+    imagem_tratada_pela_IA_url = blob.public_url
 
 
     #salva no firestorm o json que o frontend precisa consumir
