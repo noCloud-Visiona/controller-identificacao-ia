@@ -71,15 +71,33 @@ def predict():
 
     imagem_tratada_json = transforma_imagem_em_json('IA/img_mark_e_merged/merged_output_with_color.png')  # Salvar como imagem antes de converter
 
-    # Salvando no firestorm a imagem json
-    collection_ref = db.collection("historico_imagens_ia")
-    collection_ref.add({"id": id_usuario, "imagem_json": imagem_tratada_json, "data": data_atual, "hora": hora_atual})
-
     # Count de quantas imagens salvas tem, para acrescentar +1
+    collection_ref = db.collection("historico_imagens_ia")
     docs = collection_ref.stream()
     doc_count = sum(1 for _ in docs)
     
     id_unico = f"{nome_base}_{doc_count}"
+
+    # Salvando no firestorm a imagem json
+    collection_ref = db.collection("historico_imagens_ia")
+    collection_ref.add({
+        "id_usuario": id_usuario,
+        "id": id_unico,
+        "data": data_atual,
+        "hora": hora_atual,
+        "geometry": {
+            "type": "Polygon",
+            "coordinates": None
+        },
+        "resolucao_imagem": resolucao_imagem,
+        "satelite": "CBERS4A",
+        "sensor": "WPM",
+        "percentual_nuvem": porcentagem_nuvem,
+        "area_visivel_mapa": area_visivel_mapa,
+        "imagem": None,
+        "thumbnail": imagem_original_json,
+        "img_tratada": imagem_tratada_json
+    })
 
     resposta = {
         "id": id_unico,
@@ -101,13 +119,12 @@ def predict():
 
     return jsonify(resposta)
 
-@app.route('/historico', methods=['GET'])
-def get_historico():
-    # Referência à coleção
+@app.route('/historico/<id_usuario>', methods=['GET'])
+def get_historico(id_usuario):
     collection_ref = db.collection("historico_imagens_ia")
     
-    # Recuperando todos os documentos da coleção
-    documentos = collection_ref.stream()
+    # Recuperando os documentos que têm o campo "id_usuario" igual ao valor passado
+    documentos = collection_ref.where("id_usuario", "==", id_usuario).stream()
     
     # Criando uma lista para armazenar os dados
     historico = []
