@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify, send_file
+from flask_cors import CORS
 import funcoes.IA_a as IA_a
 import os
 import datetime
@@ -8,8 +9,8 @@ from funcoes.serializador_de_imagem import transforma_imagem_em_json
 from firebase import db, bucket
 from datetime import timedelta
 
-
 app = Flask(__name__)
+CORS(app)  # Habilitando o CORS para todas as rotas
 
 @app.route('/predict/<id_usuario>', methods=['POST'])
 def predict(id_usuario):
@@ -41,15 +42,11 @@ def predict(id_usuario):
     # -------------------------------------------------------------------------------------------------------------------
 
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
-    
-    
 
     # Aqui estamos garantindo que a função IA retorna três valores
     mask_path, imagem_tratada_pela_IA, porcentagem_nuvem = IA_a.IA(image_path)
     nome_base = os.path.splitext(imagem.filename)[0]
 
-    # Salvar como imagem antes de converter caso queira versão json
-    #imagem_original_json = transforma_imagem_em_json(image_path)
     # -------------------------------------------------------------------------------------------------------------------
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
@@ -66,8 +63,6 @@ def predict(id_usuario):
     porcentagem_nuvem = round(porcentagem_nuvem, 2)
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
-    # Salvar como imagem antes de converter caso queira versão json
-    #imagem_tratada_json = transforma_imagem_em_json('IA/img_mark_e_merged/merged_output_with_color.png')  
     imagem_IA_path = 'IA/img_mark_e_merged/merged_output_with_color.png'
 
     #acessa a coleção no firebase "historico_imagens_ia"
@@ -80,26 +75,16 @@ def predict(id_usuario):
     #cria o campo id unico para o frontend consumir e trazer todas as requisições de um usuario especifico
     id_unico = f"{nome_base}_{doc_count + 1}"
 
-    #versão count todos os documentos
-    #docs = collection_ref.stream()
-    #doc_count = sum(1 for _ in docs)
-    #id_unico = f"{nome_base}_{doc_count}"
-
     #salva a imagem original e a imagem tratada pela IA no bucket do firebase, referenciando caminhos no bucket
     blob = bucket.blob(f"imagens/original/{nome_base}_{doc_count}")
-    #pega o path das imagens e salva elas
     blob.upload_from_filename(image_path)
-    #tira o tempo de expiração
     blob.make_public()
-    #retorna a url da imagem salva para ser salva no json do firestorm e devolvida na resposta
     imagem_original_url = blob.public_url
 
-    #mesma lógica que os comentários de cima
     blob = bucket.blob(f"imagens/tratada/{nome_base}_{doc_count}")
     blob.upload_from_filename(imagem_IA_path)
     blob.make_public()
     imagem_tratada_pela_IA_url = blob.public_url
-
 
     #salva no firestorm o json que o frontend precisa consumir
     collection_ref = db.collection("historico_imagens_ia")
@@ -121,7 +106,6 @@ def predict(id_usuario):
         "thumbnail": imagem_original_url,
         "img_tratada": imagem_tratada_pela_IA_url
     })
-
 
     # Apaga a imagem da pasta local após termino da utilidade dela, para que não encha a pasta IA/img
     for file in os.listdir(image_dir):
