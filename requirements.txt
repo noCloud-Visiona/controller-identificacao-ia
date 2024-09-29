@@ -1,4 +1,4 @@
-absl-py==2.1.0
+﻿absl-py==2.1.0
 aenum==3.1.15
 astunparse==1.6.3
 blinker==1.8.2
@@ -58,3 +58,4 @@ Werkzeug==3.0.4
 wheel==0.44.0
 wrapt==1.16.0
 firebase-admin==6.5.0
+flask-cors==5.0.0

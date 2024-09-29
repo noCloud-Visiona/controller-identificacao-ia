@@ -25,3 +25,6 @@ python app.py
 
 ## /historico/<id_usuario>
 - retorna uma lista com todos os jsons que aquele usuario já fez até agora
+
+## /show_image
+- retorna a imagem montada caso enviado um JSON no body
