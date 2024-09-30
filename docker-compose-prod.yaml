@@ -1,5 +1,3 @@
-version: '3.8'
-
 networks:
   rede_microsservicos:
     external: true
@@ -27,7 +25,7 @@ services:
       - PGADMIN_DEFAULT_EMAIL=doxito007@gmail.com
       - PGADMIN_DEFAULT_PASSWORD=postgres
     ports:
-      - "5050:80"
+      - "5050:8080"
     restart: always
     networks:
       rede_microsservicos:
@@ -45,34 +43,49 @@ services:
         ipv4_address: 172.18.0.4
     depends_on:
       - pgadmin
-
-  controller-preferencia-area:
-    image: jonasrsribeiro/nc-controller-preferencia-area:prod
-    ports:
-      - "5001:5001"
-    restart: always
-    networks:
-      rede_microsservicos:
-        ipv4_address: 172.18.0.5
-    depends_on:
-      - pgadmin
-
-  frontend:
-    image: jonasrsribeiro/nc-frontend:prod
-    ports:
-      - "8080:8080"
-    volumes:
-      - front-data:/app
-    environment:
-      - NODE_ENV=production
-    networks:
-      rede_microsservicos:
-        ipv4_address: 172.18.0.6
-    depends_on:
       - postgres
-      - mysql
-      - controller-cadastro-autenticacao
-      - controller-gerenciamento-estacoes-metricas
+
+  #controller-preferencia-area:
+  #  image: jonasrsribeiro/nc-controller-preferencia-area:prod
+  #  ports:
+  #    - "3001:3001"
+  #  restart: always
+  #  networks:
+  #    rede_microsservicos:
+  #      ipv4_address: 172.18.0.5
+  #  depends_on:
+  #    - pgadmin
+  #    - postgres
+  #    - controller-cadastro-autenticacao
+  
+  #controller-obter-imagens:
+  #  image: jonasrsribeiro/nc-controller-obter-imagens:prod
+  #  ports:
+  #    - "3003:3003"
+  #  restart: always
+  #  networks:
+  #    rede_microsservicos:
+  #      ipv4_address: 172.18.0.8
+  #  depends_on:
+  #    - pgadmin
+  #    - postgres
+  #    - controller-cadastro-autenticacao
+  #    - controller-preferencia-area
+
+  #controller-conversor:
+  #  image: jonasrsribeiro/nc-controller-conversor:prod
+  #  ports:
+  #    - "3004:3004"
+  #  restart: always
+  #  networks:
+  #    rede_microsservicos:
+  #      ipv4_address: 172.18.0.9
+  #  depends_on:
+  #    - pgadmin
+  #    - postgres
+  #    - controller-cadastro-autenticacao
+  #    - controller-preferencia-area
+  #    - controller-obter-imagens
 
   controller-identificacao-ia:
     image: jonasrsribeiro/nc-controller-identificacao-ia:prod
@@ -83,46 +96,30 @@ services:
       rede_microsservicos:
         ipv4_address: 172.18.0.7
     depends_on:
+      - pgadmin
       - postgres
-      - mysql
       - controller-cadastro-autenticacao
-      - nc-controller-preferencia-area
-      - frontend
 
-  controller-obter-imagens:
-    image: jonasrsribeiro/nc-controller-obter-imagens:prod
+  frontend:
+    image: jonasrsribeiro/nc-controller-frontend:prod
     ports:
-      - "5003:5003"
-    restart: always
+      - "8080:8080"
+    volumes:
+      - front-data:/app
+    environment:
+      - NODE_ENV=development
     networks:
       rede_microsservicos:
-        ipv4_address: 172.18.0.8
+        ipv4_address: 172.18.0.6
     depends_on:
+      - pgadmin
       - postgres
-      - mysql
       - controller-cadastro-autenticacao
-      - nc-controller-preferencia-area
+      #- controller-preferencia-area
+      #- controller-obter-imagens
+      #- controller-conversor
       - controller-identificacao-ia
-      - frontend
-
-  controller-conversor:
-    image: jonasrsribeiro/nc-controller-conversor:prod
-    ports:
-      - "5004:5004"
-    restart: always
-    networks:
-      rede_microsservicos:
-        ipv4_address: 172.18.0.9
-      depends_on:
-        - postgres
-        - mysql
-        - controller-cadastro-autenticacao
-        - nc-controller-preferencia-area
-        - controller-identificacao-ia
-        - controller-obter-imagens
-        - frontend
 
 volumes:
   postgres-data:
-  mysql-data:
   front-data:

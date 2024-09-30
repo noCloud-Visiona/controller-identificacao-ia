@@ -1,0 +1,26 @@
+# Use uma imagem base do Python
+FROM python:3.10-slim
+
+# Instale as dependências do sistema necessárias para o OpenCV
+RUN apt-get update && apt-get install -y \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+# Defina o diretório de trabalho no contêiner
+WORKDIR /app
+
+# Copie o arquivo requirements.txt
+COPY requirements.txt .
+
+# Instale as dependências listadas no requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie o restante do código da aplicação para o contêiner
+COPY . /app
+
+# Exponha a porta 3002
+EXPOSE 3002
+
+# Comando para rodar o aplicativo
+CMD ["python", "app.py"]
