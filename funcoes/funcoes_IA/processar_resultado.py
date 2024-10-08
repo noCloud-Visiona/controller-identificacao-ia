@@ -7,7 +7,7 @@ def mascara_binaria(image, nome_imagem_original, H, W):
     mask = np.zeros((H, W), dtype=np.uint8)  # Corrigido para (altura, largura)
 
     # Salva a máscara preta
-    output_mask_path = f"./../IA/img_mark_e_merged/{nome_imagem_original}_masked_output_0.png"
+    output_mask_path = f"./../IA/img_mark/{nome_imagem_original}_masked_output_0.png"
     cv2.imwrite(output_mask_path, mask)
 
     if not isinstance(image, np.ndarray):
