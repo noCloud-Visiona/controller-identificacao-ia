@@ -12,6 +12,8 @@ tile_size = 640
 
 def recortar_imagem(tiff_path, image_output_dir, tile_size):
 
+    if not os.path.exists(image_output_dir):
+       os.makedirs(image_output_dir)
     # Abrir o arquivo TIFF original (contendo apenas a banda NIR)
     with rasterio.open(tiff_path) as src:
         width, height = src.width, src.height
@@ -24,7 +26,7 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
                 window = rasterio.windows.Window(i, j, tile_size, tile_size)
                 tile_transform = src.window_transform(window)
                 tile = src.read(1, window=window)  # Ler apenas a banda 1, pois é a única presente
-
+                
                 linha_num = j // tile_size
                 tile_filename_prefix = f"{linha_num}_{tile_count}"
                 tile_count += 1

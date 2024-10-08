@@ -1,10 +1,12 @@
 import os
+import cv2
 from PIL import Image
 import numpy as np
 from ultralytics import YOLO
-from funcoes.enums import Caminho
-from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
-from funcoes.funcoes_IA.processar_resultado import processar_resultado
+from enums import Caminho
+from funcoes_IA.tratar_imagem import tratar_imagem_cinza
+from funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
+from funcoes_IA.processar_resultado import processar_resultado
 
 def criar_mascara_binaria(imagem, path):
     mask = Image.new("L", imagem.size, 0)  # Cria uma imagem preta com o mesmo tamanho da imagem original
@@ -14,8 +16,8 @@ def criar_mascara_binaria(imagem, path):
     return mask_path
 
 def redimensionar_imagem(imagem, tamanho=(640, 640)):
-    if imagem.size != tamanho:
-        imagem = imagem.resize(tamanho)
+    if imagem.shape != tamanho:
+        imagem = cv2.resize(imagem, tamanho)
     return imagem
 
 def segmentar_imagem(image, model):
@@ -24,20 +26,13 @@ def segmentar_imagem(image, model):
 
 def segmentar_imagens(images_path=Caminho.IMG_TILE.value):
     model = YOLO(Caminho.PESO.value)
-
     for root, dirs, files in os.walk(images_path):
         for file in files:
             if file.endswith('.png'):
                 image_path = os.path.join(root, file)
-                
-                imagem = Image.open(image_path)
-                
-                # Verificando e redimensionando a imagem
-                imagem_resized = redimensionar_imagem(imagem)
-
+                print(image_path)
+                imagem = cv2.imread(image_path)
+                imagem = tratar_imagem_cinza(imagem)
                 nome_imagem_original = os.path.splitext(file)[0]
-
-                results = segmentar_imagem(np.array(imagem_resized), model)
+                results = segmentar_imagem(imagem, model)
                 output_mask_path, merged_image = processar_resultado(results, imagem, nome_imagem_original)
-                porcentagem = porcentagem_nuvem(img=merged_image, mask_path=output_mask_path)
-                return output_mask_path, merged_image, porcentagem
