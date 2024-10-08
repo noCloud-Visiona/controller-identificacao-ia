@@ -3,6 +3,7 @@ from PIL import Image
 import numpy as np
 from ultralytics import YOLO
 from funcoes.enums import Caminho
+from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
 from funcoes.funcoes_IA.processar_resultado import processar_resultado
 
 def criar_mascara_binaria(imagem, path):
@@ -37,4 +38,6 @@ def segmentar_imagens(images_path=Caminho.IMG_TILE.value):
                 nome_imagem_original = os.path.splitext(file)[0]
 
                 results = segmentar_imagem(np.array(imagem_resized), model)
-                processar_resultado(results, imagem, nome_imagem_original)
+                output_mask_path, merged_image = processar_resultado(results, imagem, nome_imagem_original)
+                porcentagem = porcentagem_nuvem(img=merged_image, mask_path=output_mask_path)
+                return output_mask_path, merged_image, porcentagem
