@@ -7,7 +7,7 @@ import cv2
 # Caminho para a imagem .tiff grande e pastas de saída
 tiff_path = 'img/tiff/CBERS_4A_WPM_20241001_208_131_L2_BAND4.tif'
 image_output_dir = "img/tiff_imagem"
-tile_size = 640  # Ajuste o tamanho dos blocos
+tile_size = 640 
 
 
 def recortar_imagem(tiff_path, image_output_dir, tile_size):
@@ -17,10 +17,8 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
         width, height = src.width, src.height
         transform = src.transform
 
-        # Inicializar contador para o número de tiles
         tile_count = 0
 
-        # Quebrar em tiles
         for j in range(0, height, tile_size):  # Para as linhas (j)
             for i in range(0, width, tile_size):  # Para as colunas (i)
                 window = rasterio.windows.Window(i, j, tile_size, tile_size)
@@ -43,9 +41,7 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
                 img = Image.fromarray(nir_image, mode='L')  # 'L' para imagem em tons de cinza
                 img.save(image_path)
                 segment_filename = f"{tile_filename_prefix}_segment.png"
-
-                merged_filename = f"{tile_filename_prefix}_merged.png"
-                print(f"Imagem {image_filename}, segmentação {segment_filename}, e sobreposição {merged_filename} salvas.")
+                print(f"Imagem {image_filename}, segmentação {segment_filename} salvas.")
 
             tile_count = 0
 

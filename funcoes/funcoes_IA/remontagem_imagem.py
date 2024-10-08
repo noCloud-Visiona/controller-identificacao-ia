@@ -8,7 +8,6 @@ tile_dir = 'img/tiff_imagem'
 # Dimensões padrão dos tiles (máximo)
 tile_width, tile_height = 640, 640
 
-# Número de tiles por linha e coluna
 tiles_per_row = 23  # Número de tiles na horizontal
 tiles_per_col = 23  # Número de tiles na vertical
 
@@ -19,9 +18,8 @@ def load_tile(tile_filename, tile_dir):
     tile_path = os.path.join(tile_dir, tile_filename)
     return Image.open(tile_path)
 
-# Função que retorna as dimensões de um tile
 def get_tile_dimensions(tile):
-    return tile.size  # Retorna (largura, altura) do tile
+    return tile.size 
 
 
 def remontar(tile_dir, tile_width, tile_height, tiles_per_col, filler_color):
@@ -34,7 +32,6 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, filler_color):
             # Nome do arquivo do tile, baseado na sua posição (você pode ajustar conforme necessário)
             tile_filename = f"{row_index}_{col_index}_NIR.png"
 
-            # Carrega o tile
             try:
                 tile = load_tile(tile_filename, tile_dir)
             except FileNotFoundError:
@@ -44,17 +41,13 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, filler_color):
             # Verifica as dimensões do tile
             current_tile_width, current_tile_height = get_tile_dimensions(tile)
 
-            # Calcula a posição na imagem final
             x_position = col_index * tile_width
             y_position = row_index * tile_height
 
-            # Cria um fundo do tamanho correto para o tile com a cor de preenchimento
             background = Image.new('RGB', (tile_width, tile_height), filler_color)
 
-            # Cola o tile na imagem de fundo (caso o tile seja menor, ele é centralizado)
             background.paste(tile, (0, 0, current_tile_width, current_tile_height))
 
-            # Coloca o tile (com o fundo) na imagem final na posição correta
             imagem_final.paste(background, (x_position, y_position))
 
     # Salva a imagem final montada
