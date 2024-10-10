@@ -59,3 +59,4 @@ wheel==0.44.0
 wrapt==1.16.0
 firebase-admin==6.5.0
 flask-cors==5.0.0
+python-dotenv==1.0.1
