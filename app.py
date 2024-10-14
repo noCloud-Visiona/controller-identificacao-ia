@@ -75,20 +75,24 @@ def predict():
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
     imagem_IA_path = 'IA/img_mark_e_merged/merged_output_with_color.png'
+    imagem_mask_cloud_path = 'IA/img_mark_e_merged/mask_0.png'
 
     #rota pra salvar as 2 imagens no Bucket e receber as 2 url de volta
-    #with open(image_path, 'rb') as original_image, open(imagem_IA_path, 'rb') as tratada_image:
-    #    files = {
-    #        'original': original_image,
-    #        'tratada': tratada_image
-    #    }
-        # Rota de Teste local
-    #    response = requests.post('http://localhost:5000/upload_images', files=files)
-    #    data = response.json()
+    with open(imagem_IA_path, 'rb') as tratada_image, open(imagem_mask_cloud_path, 'rb') as nuvem_image:
+        files = {
+            'tratada': tratada_image,
+            'nuvem': nuvem_image
+        }
+
+        # Enviando as imagens para as respectivas rotas
+        response_tratada = requests.post('http://192.168.0.212:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
+        response_mask = requests.post('http://192.168.0.212:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
+        data_tratada = response_tratada.json()
+        data_mask = response_mask.json()
         
     # Obtendo as URLs das imagens
-    #original_url = data['original_url']
-    #tratada_url = data['tratada_url']
+    tratada_url = data_tratada.get('tratada_url')
+    nuvem_url = data_mask.get('nuvem_url')
 
     # Salva no Firestore o JSON que o frontend precisa consumir
     json_incompleto_para_a_rota_terminar = {
@@ -112,7 +116,7 @@ def predict():
             "tci": {
                 "href": data['assets']['tci'].get('href', None),
                 "type": data['assets']['tci'].get('type', None),
-                "roles": data['assets']['tci'].get('roles', []),
+                "roles": data['assets']['tci'].get('roles', None),
                 "created": data['assets']['tci'].get('created', None),
                 "updated": data['assets']['tci'].get('updated', None),
                 "bdc:size": data['assets']['tci'].get('bdc:size', None),
@@ -123,7 +127,7 @@ def predict():
             "thumbnail": {
                 "href": data['assets']['thumbnail'].get('href', None),
                 "type": data['assets']['thumbnail'].get('type', None),
-                "roles": data['assets']['thumbnail'].get('roles', []),
+                "roles": data['assets']['thumbnail'].get('roles', None),
                 "created": data['assets']['thumbnail'].get('created', None),
                 "updated": data['assets']['thumbnail'].get('updated', None),
                 "bdc:size": data['assets']['thumbnail'].get('bdc:size', None),
@@ -152,9 +156,9 @@ def predict():
             "id_usuario": data['identificacao_ia'].get('id_usuario', None),
             "img_original_png": data['identificacao_ia'].get('img_original_png', None),
             "img_original_tiff": data['identificacao_ia'].get('img_original_tiff', None),
-            "img_tratada": None,
+            "img_tratada": tratada_url,
             "mask_nuvem": None,
-            "mask_sombra": None,
+            "mask_sombra": nuvem_url,
             "tiff_tratado": None,
             "resolucao_imagem_png": resolucao_da_imagem,
             "resolucao_imagem_tiff": None,
@@ -163,16 +167,20 @@ def predict():
     }
 
     # Rota de Teste local
-    #response = requests.post('http://localhost:5000/post_json', json=json_incompleto_para_a_rota_terminar)
+    response_json = {}  # Inicializa a variável para evitar erros
+
+    # Faz a requisição
+    response = requests.post('http://192.168.0.212:3005/post_json', json=json_incompleto_para_a_rota_terminar)
 
     # Verificação da resposta
-    #if response.status_code == 201:
-    #    response_json = response.json()
-    #    print("JSON recebido da resposta")
-    #else:
-    #    print("Erro ao enviar o JSON:", response.status_code, response.text)
+    if response.status_code == 201:
+        response_json = response.json()
+        print("JSON recebido da resposta:", response_json)
+    else:
+        print("Erro ao enviar o JSON:", response.status_code, response.text)
 
-    return jsonify(json_incompleto_para_a_rota_terminar)
+    # Retorna o JSON de resposta ou um erro, conforme a situação
+    return jsonify(response_json), response.status_code
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=3002)
