@@ -3,10 +3,10 @@ import cv2
 from PIL import Image
 import numpy as np
 from ultralytics import YOLO
-from enums import Caminho
-from funcoes_IA.tratar_imagem import tratar_imagem_cinza
-from funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
-from funcoes_IA.processar_resultado import processar_resultado
+from funcoes.enums import Caminho
+from funcoes.funcoes_IA.tratar_imagem import tratar_imagem_cinza
+from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
+from funcoes.funcoes_IA.processar_resultado import processar_resultado
 
 def criar_mascara_binaria(imagem, path):
     mask = Image.new("L", imagem.size, 0)  # Cria uma imagem preta com o mesmo tamanho da imagem original

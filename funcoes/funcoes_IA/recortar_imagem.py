@@ -4,11 +4,6 @@ import os
 from PIL import Image
 import cv2
 
-# Caminho para a imagem .tiff grande e pastas de saída
-tiff_path = 'img/tiff/CBERS_4A_WPM_20241001_208_131_L2_BAND4.tif'
-image_output_dir = "img/tiff_imagem"
-tile_size = 640 
-
 
 def recortar_imagem(tiff_path, image_output_dir, tile_size):
 
@@ -42,8 +37,7 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
                 nir_image = nir_normalized.astype(np.uint8)
                 img = Image.fromarray(nir_image, mode='L')  # 'L' para imagem em tons de cinza
                 img.save(image_path)
-                segment_filename = f"{tile_filename_prefix}_segment.png"
-                print(f"Imagem {image_filename}, segmentação {segment_filename} salvas.")
+                print(f"Imagem {image_filename}.")
 
             tile_count = 0
 

@@ -7,7 +7,7 @@ def mascara_binaria(image, nome_imagem_original, H, W):
     mask = np.zeros((H, W), dtype=np.uint8)  # Corrigido para (altura, largura)
 
     # Salva a máscara preta
-    output_mask_path = f"./../IA/img_mark/{nome_imagem_original}_masked_output_0.png"
+    output_mask_path = f"./IA/img_mark/{nome_imagem_original}_masked_output_0.png"
     cv2.imwrite(output_mask_path, mask)
 
     if not isinstance(image, np.ndarray):
@@ -20,7 +20,7 @@ def mascara_binaria(image, nome_imagem_original, H, W):
     # Cria uma imagem colorida da máscara (todas as cores pretas)
     mask_color = np.zeros((H, W, 3), dtype=np.uint8) 
     merged_image = cv2.addWeighted(image, 0.7, mask_color, 0.3, 0)
-    merged_output_path = f"./../IA/img_merged/{nome_imagem_original}_merged_0.png"
+    merged_output_path = f"./IA/img_merged/{nome_imagem_original}_merged_0.png"
     cv2.imwrite(merged_output_path, merged_image)
     
     print(f"Mascara preta salva como {output_mask_path}")
@@ -45,7 +45,7 @@ def processar_resultado(results, image, nome_imagem_original):
                 mask = mask.numpy()
                 mask = cv2.resize(mask, (W, H))  # Certifica-se de que as dimensões estão corretas
 
-                output_mask_path = f"./../IA/img_mark/{nome_imagem_original}_masked_output_{j}.png"  # Nome do arquivo para a máscara
+                output_mask_path = f"./IA/img_mark/{nome_imagem_original}_masked_output_{j}.png"  # Nome do arquivo para a máscara
                 cv2.imwrite(output_mask_path, mask * 255)  # Salva a máscara como uma imagem
 
                 mask_img = cv2.imread(output_mask_path, cv2.IMREAD_GRAYSCALE)
@@ -55,7 +55,7 @@ def processar_resultado(results, image, nome_imagem_original):
                 mask_color[mask_img > 0] = [0, 0, 255]  # Cor vermelha onde a máscara é aplicada
 
                 merged_image = cv2.addWeighted(image, 0.7, mask_color, 0.3, 0) 
-                merged_output_path = f"./../IA/img_merged/{nome_imagem_original}_merged_{j}.png"
+                merged_output_path = f"./IA/img_merged/{nome_imagem_original}_merged_{j}.png"
                 cv2.imwrite(merged_output_path, merged_image)
 
                 print(f"Merge completo. Imagem salva como {nome_imagem_original}_merged_{j}.png .")
