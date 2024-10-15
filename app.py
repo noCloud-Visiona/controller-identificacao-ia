@@ -94,6 +94,14 @@ def predict():
     tratada_url = data_tratada.get('tratada_url')
     nuvem_url = data_mask.get('nuvem_url')
 
+    id_usuario = data['identificacao_ia'].get('id_usuario', None)
+
+    # Verifica se id_usuario não é None e se não é uma string
+    if id_usuario is not None and not isinstance(id_usuario, str):
+        id_usuario = str(id_usuario)
+    else:
+        return "id_usuario inválido"
+
     # Salva no Firestore o JSON que o frontend precisa consumir
     json_incompleto_para_a_rota_terminar = {
         "type": data.get('type', None),
@@ -151,14 +159,14 @@ def predict():
             "area_visivel_mapa": area_visivel_mapa,
             "percentual_nuvem": porcentagem_nuvem,
             "percentual_sombra_nuvem": None,
+            "id_usuario": id_usuario,
             "data": data_atual,
             "hora": hora_atual,
-            "id_usuario": data['identificacao_ia'].get('id_usuario', None),
             "img_original_png": data['identificacao_ia'].get('img_original_png', None),
             "img_original_tiff": data['identificacao_ia'].get('img_original_tiff', None),
             "img_tratada": tratada_url,
-            "mask_nuvem": None,
-            "mask_sombra": nuvem_url,
+            "mask_nuvem": nuvem_url,
+            "mask_sombra": None,
             "tiff_tratado": None,
             "resolucao_imagem_png": resolucao_da_imagem,
             "resolucao_imagem_tiff": None,
@@ -167,7 +175,7 @@ def predict():
     }
 
     # Rota de Teste local
-    response_json = {}  # Inicializa a variável para evitar erros
+    response_json = {}
 
     # Faz a requisição
     response = requests.post('http://192.168.0.212:3005/post_json', json=json_incompleto_para_a_rota_terminar)
@@ -175,7 +183,6 @@ def predict():
     # Verificação da resposta
     if response.status_code == 201:
         response_json = response.json()
-        print("JSON recebido da resposta:", response_json)
     else:
         print("Erro ao enviar o JSON:", response.status_code, response.text)
 
