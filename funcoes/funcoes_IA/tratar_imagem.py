@@ -11,3 +11,9 @@ def tratar_imagem(image):
     # Converter de volta para 3 canais
     gray_img_3ch = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2BGR)
     return gray_img_3ch
+
+def tratar_imagem_cinza(image):
+    gray_img = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    gray_img_3ch = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2BGR)
+
+    return gray_img_3ch

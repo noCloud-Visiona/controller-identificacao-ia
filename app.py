@@ -1,3 +1,4 @@
+import cv2
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import funcoes.IA_a as IA_a
@@ -61,6 +62,8 @@ def predict():
     
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
     mask_path, imagem_tratada_pela_IA, porcentagem_nuvem = IA_a.IA(image_path)
+    imagem_tratada_pela_IA = cv2.imwrite(imagem_tratada_pela_IA, cv2.IMREAD_UNCHANGED)
+    nome_base = os.path.splitext(imagem_tratada_pela_IA.filename)[0]
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
     data_atual = datetime.datetime.now().strftime("%Y-%m-%d")
