@@ -3,11 +3,8 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import funcoes.IA_a as IA_a
 import os
+import requests
 import datetime
-import json
-import base64
-from funcoes.serializador_de_imagem import transforma_imagem_em_json
-from firebase import db, bucket
 from dotenv import load_dotenv
 
 # Carregando as variáveis de ambiente do arquivo .env.dev
@@ -16,34 +13,57 @@ load_dotenv('.env.dev')
 app = Flask(__name__)
 CORS(app)  # Habilitando o CORS para todas as rotas
 
-@app.route('/predict/<id_usuario>', methods=['POST'])
-def predict(id_usuario):
-    # ------------------------- Parte envolvendo receber a imagem e id do usuario da requisição -------------------------
-    if not request.files:
-        return jsonify({'error': 'Nenhuma imagem provida'}), 400
+@app.route('/predict/', methods=['POST'])
+def predict():
+    # ------------------------- Parte envolvendo receber o JSON do controller-INPE com a URL da imagem -------------------------
+    data = request.get_json()
 
-    imagem = next(iter(request.files.values()))
+    # Verifica se o JSON foi enviado e se contém o campo img_original_png
+    if not data or 'identificacao_ia' not in data or 'img_original_png' not in data['identificacao_ia']:
+        return jsonify({'error': 'JSON inválido ou campo img_original_png ausente'}), 400
 
+    # Obtém o campo img_original_png do JSON
+    img_url = data['identificacao_ia']['img_original_png']
+    print(img_url)
+
+    image_filename = os.path.basename(img_url)
+    if not image_filename.endswith('.png'):  # Verifica se já tem a extensão .png
+        image_filename += '.png'
+    
+    # Faz o download da imagem usando a URL fornecida
+    try:
+        response = requests.get(img_url)
+        if response.status_code != 200:
+            return jsonify({'error': 'Não foi possível baixar a imagem da URL fornecida'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+    # Define o diretório onde a imagem será salva
     image_dir = "IA/img/"
     if not os.path.exists(image_dir):
         os.makedirs(image_dir)
 
-    # Salva o caminho onde ficou a imagem
-    image_path = os.path.join(image_dir, imagem.filename)
-    imagem.save(image_path)
+    # Define o caminho completo da imagem com o nome do arquivo extraído da URL
+    image_path = os.path.join(image_dir, image_filename)
 
+    # Salva a imagem baixada no caminho especificado
+    with open(image_path, 'wb') as f:
+        f.write(response.content)
+
+    # ------------------------- Valida o formato da imagem -------------------------
     supported_formats = {'bmp', 'jpg', 'png', 'tiff', 'mpo', 'webp', 'jpeg', 'dng', 'pfm', 'tif'}
 
-    if image_path.split('.')[-1].lower() not in supported_formats:
-        os.remove(image_path)
+    # Verifica a extensão da imagem e converte para minúsculo para evitar problemas de case-sensitive
+    image_extension = image_filename.split('.')[-1].lower()
+
+    if image_extension not in supported_formats:
+        os.remove(image_path)  # Remove a imagem caso o formato não seja suportado
         return jsonify({'error': 'Formato de imagem não suportado'}), 400
-
-    print(f"Imagem encontrada: {image_path}")
-
+    
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
     mask_path, imagem_tratada_pela_IA, porcentagem_nuvem = IA_a.IA(image_path)
     imagem_tratada_pela_IA = cv2.imwrite(imagem_tratada_pela_IA, cv2.IMREAD_UNCHANGED)
-    nome_base = os.path.splitext(imagem.filename)[0]
+    nome_base = os.path.splitext(imagem_tratada_pela_IA.filename)[0]
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
     data_atual = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -58,190 +78,119 @@ def predict(id_usuario):
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
     imagem_IA_path = 'IA/img_mark_e_merged/merged_output_with_color.png'
+    imagem_mask_cloud_path = 'IA/img_mark_e_merged/mask_0.png'
 
-    # Acessa a coleção no Firestore "historico_imagens_ia"
-    collection_ref = db.collection("historico_imagens_ia")
+    #rota pra salvar as 2 imagens no Bucket e receber as 2 url de volta
+    with open(imagem_IA_path, 'rb') as tratada_image, open(imagem_mask_cloud_path, 'rb') as nuvem_image:
+        files = {
+            'tratada': tratada_image,
+            'nuvem': nuvem_image
+        }
 
-    # Conta quantos documentos já existem para o usuário, para criar um id único
-    docs = collection_ref.where("id_usuario", "==", id_usuario).stream()
-    doc_count = sum(1 for _ in docs)
+        # Enviando as imagens para as respectivas rotas
+        response_tratada = requests.post('http://192.168.0.212:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
+        response_mask = requests.post('http://192.168.0.212:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
+        data_tratada = response_tratada.json()
+        data_mask = response_mask.json()
+        
+    # Obtendo as URLs das imagens
+    tratada_url = data_tratada.get('tratada_url')
+    nuvem_url = data_mask.get('nuvem_url')
 
-    id_imagem = f"{nome_base}_{doc_count + 1}"
+    id_usuario = data['identificacao_ia'].get('id_usuario', None)
 
-    # Salva a imagem original e a tratada no Firebase Storage
-    blob = bucket.blob(f"imagens/original_final/{id_imagem}")
-    blob.upload_from_filename(image_path)
-    blob.make_public()
-    imagem_original_url = blob.public_url
-
-    blob = bucket.blob(f"imagens/tratada_final/{id_imagem}")
-    blob.upload_from_filename(imagem_IA_path)
-    blob.make_public()
-    imagem_tratada_pela_IA_url = blob.public_url
+    # Verifica se id_usuario não é None e se não é uma string
+    if id_usuario is not None and not isinstance(id_usuario, str):
+        id_usuario = str(id_usuario)
+    else:
+        return "id_usuario inválido"
 
     # Salva no Firestore o JSON que o frontend precisa consumir
-    collection_ref.add({
-        "id_usuario": id_usuario,
-        "id_imagem": id_imagem,
-        "data": data_atual,
-        "hora": hora_atual,
+    json_incompleto_para_a_rota_terminar = {
+        "type": data.get('type', None),
+        "id": data.get('id', None),
+        "collection": data.get('collection', None),
+        "stac_version": data.get('stac_version', None),
+        "stac_extensions": data.get('stac_extensions', []),
         "geometry": {
-            "type": "Polygon",
-            "coordinates": None
+            "type": data['geometry'].get('type', None),
+            "coordinates": data['geometry'].get('coordinates', None)
         },
-        "resolucao_imagem": resolucao_da_imagem,
-        "satelite": "CBERS4A",
-        "sensor": "WPM",
-        "percentual_nuvem": porcentagem_nuvem,
-        "area_visivel_mapa": area_visivel_mapa,
-        "imagem": None,
-        "thumbnail": imagem_original_url,
-        "img_tratada": imagem_tratada_pela_IA_url
-    })
-
-    resposta = {
-        "id_usuario": id_usuario,
-        "id_imagem": id_imagem,
-        "data": data_atual,
-        "hora": hora_atual,
-        "geometry": {
-            "type": "Polygon",
-            "coordinates": None
+        "links": [
+            {
+                "href": link.get('href'),
+                "rel": link.get('rel')
+            } for link in data.get('links', [])
+        ],
+        "bbox": data.get('bbox', None),
+        "assets": {
+            "tci": {
+                "href": data['assets']['tci'].get('href', None),
+                "type": data['assets']['tci'].get('type', None),
+                "roles": data['assets']['tci'].get('roles', None),
+                "created": data['assets']['tci'].get('created', None),
+                "updated": data['assets']['tci'].get('updated', None),
+                "bdc:size": data['assets']['tci'].get('bdc:size', None),
+                "bdc:chunk_size": data['assets']['tci'].get('bdc:chunk_size', None),
+                "bdc:raster_size": data['assets']['tci'].get('bdc:raster_size', None),
+                "checksum:multihash": data['assets']['tci'].get('checksum:multihash', None)
+            },
+            "thumbnail": {
+                "href": data['assets']['thumbnail'].get('href', None),
+                "type": data['assets']['thumbnail'].get('type', None),
+                "roles": data['assets']['thumbnail'].get('roles', None),
+                "created": data['assets']['thumbnail'].get('created', None),
+                "updated": data['assets']['thumbnail'].get('updated', None),
+                "bdc:size": data['assets']['thumbnail'].get('bdc:size', None),
+                "checksum:multihash": data['assets']['thumbnail'].get('checksum:multihash', None)
+            }
         },
-        "resolucao_imagem": resolucao_da_imagem,
-        "satelite": "CBERS4A",
-        "sensor": "WPM",
-        "percentual_nuvem": porcentagem_nuvem,
-        "area_visivel_mapa": area_visivel_mapa,
-        "imagem": None,
-        "thumbnail": imagem_original_url,
-        "img_tratada": imagem_tratada_pela_IA_url
+        "properties": {
+            "datetime": data['properties'].get('datetime', None),
+            "start_datetime": data['properties'].get('start_datetime', None),
+            "end_datetime": data['properties'].get('end_datetime', None),
+            "created": data['properties'].get('created', None),
+            "updated": data['properties'].get('updated', None),
+            "eo:cloud_cover": data['properties'].get('eo:cloud_cover', None)
+        },
+        "user_geometry": {
+            "type": data['user_geometry'].get('type', None),
+            "coordinates": data['user_geometry'].get('coordinates', None)
+        },
+        "identificacao_ia":{
+            "id": data['identificacao_ia'].get('id', None),
+            "area_visivel_mapa": area_visivel_mapa,
+            "percentual_nuvem": porcentagem_nuvem,
+            "percentual_sombra_nuvem": None,
+            "id_usuario": id_usuario,
+            "data": data_atual,
+            "hora": hora_atual,
+            "img_original_png": data['identificacao_ia'].get('img_original_png', None),
+            "img_original_tiff": data['identificacao_ia'].get('img_original_tiff', None),
+            "img_tratada": tratada_url,
+            "mask_nuvem": nuvem_url,
+            "mask_sombra": None,
+            "tiff_tratado": None,
+            "resolucao_imagem_png": resolucao_da_imagem,
+            "resolucao_imagem_tiff": None,
+            "bbox": data['identificacao_ia'].get('bbox', None)
+        }
     }
 
-    return jsonify(resposta)
+    # Rota de Teste local
+    response_json = {}
 
-@app.route('/historico/<id_usuario>', methods=['GET'])
-def get_historico(id_usuario):
-    collection_ref = db.collection("historico_imagens_ia")
+    # Faz a requisição
+    response = requests.post('http://192.168.0.212:3005/post_json', json=json_incompleto_para_a_rota_terminar)
 
-    # Recuperando os documentos que têm o campo "id_usuario" igual ao valor passado
-    documentos = collection_ref.where("id_usuario", "==", id_usuario).stream()
-
-    # Criando uma lista para armazenar os dados
-    historico = [doc.to_dict() for doc in documentos]
-
-    return jsonify(historico)
-
-@app.route('/delete_image/<id_imagem>/<id_usuario>', methods=['DELETE'])
-def delete_image(id_imagem, id_usuario):
-    collection_ref = db.collection("historico_imagens_ia")
-
-    # Recupera o documento que tem o campo "id_imagem" e "id_usuario" igual ao fornecido
-    documentos = collection_ref.where("id_imagem", "==", id_imagem).where("id_usuario", "==", id_usuario).stream()
-
-    doc_to_delete = None
-    for doc in documentos:
-        doc_to_delete = doc
-        break
-
-    if not doc_to_delete:
-        return jsonify({"message": "Imagem não encontrada ou não pertence ao usuário"}), 404
-
-    # Pegando os dados do documento
-    doc_data = doc_to_delete.to_dict()
-    original_url = doc_data.get("thumbnail")
-    treated_url = doc_data.get("img_tratada")
-
-    try:
-        # Extrair o caminho do bucket a partir das URLs
-        if original_url:
-            original_blob_name = "/".join(original_url.split("/")[-3:])  # Obtém o caminho relativo do blob
-            bucket.delete_blob(original_blob_name)
-
-        if treated_url:
-            treated_blob_name = "/".join(treated_url.split("/")[-3:])  # Obtém o caminho relativo do blob
-            bucket.delete_blob(treated_blob_name)
-
-        # Deletando o documento do Firestore
-        doc_to_delete.reference.delete()
-
-        return jsonify({"message": "Imagem deletada com sucesso"}), 200
-
-    except Exception as e:
-        return jsonify({"message": f"Erro ao deletar imagem: {str(e)}"}), 500
-
-
-@app.route('/get_image/<id_imagem>/<id_usuario>', methods=['GET'])
-def get_image(id_imagem, id_usuario):
-    collection_ref = db.collection("historico_imagens_ia")
-
-    # Recupera o documento que tem o campo "id_imagem" igual ao valor passado e "id_usuario" igual ao fornecido
-    documentos = collection_ref.where("id_imagem", "==", id_imagem).where("id_usuario", "==", id_usuario).stream()
-
-    doc_to_get = None
-    for doc in documentos:
-        doc_to_get = doc
-        break
-
-    if not doc_to_get:
-        return jsonify({"message": "Imagem não encontrada ou não pertence ao usuário"}), 404
-
-    # Pegando os dados do documento
-    doc_data = doc_to_get.to_dict()
-
-    resposta = {
-        "id_usuario": doc_data.get("id_usuario"),
-        "id_imagem": doc_data.get("id_imagem"),
-        "data": doc_data.get("data"),
-        "hora": doc_data.get("hora"),
-        "geometry": doc_data.get("geometry"),
-        "resolucao_imagem": doc_data.get("resolucao_imagem"),
-        "satelite": doc_data.get("satelite"),
-        "sensor": doc_data.get("sensor"),
-        "percentual_nuvem": doc_data.get("percentual_nuvem"),
-        "area_visivel_mapa": doc_data.get("area_visivel_mapa"),
-        "thumbnail": doc_data.get("thumbnail"),
-        "img_tratada": doc_data.get("img_tratada")
-    }
-
-    return jsonify(resposta), 200
-
-@app.route('/show_image', methods=['POST'])
-def show_image():
-    json_data = request.get_json()
-
-    # Chama a função para transformar a imagem codificada em um arquivo PNG
-    success, mensagem = transforma_json_em_imagem(json_data, "IA/img/output_image.png")
-
-    if success:
-        try:
-            return send_file("IA/img/output_image.png", mimetype='image/png'), 200
-        except FileNotFoundError:
-            return jsonify({"message": "Erro: Imagem não encontrada"}), 404
+    # Verificação da resposta
+    if response.status_code == 201:
+        response_json = response.json()
     else:
-        return jsonify({"message": mensagem}), 400
+        print("Erro ao enviar o JSON:", response.status_code, response.text)
 
-def transforma_json_em_imagem(image_json, output_path):
-    try:
-        image_data = image_json.get("img_tratada", "")
-        
-        if not image_data:
-            raise ValueError("Imagem não encontrada na chave 'img_tratada' do JSON")
-
-        missing_padding = len(image_data) % 4
-        if missing_padding:
-            image_data += '=' * (4 - missing_padding)
-
-        with open(output_path, "wb") as output_file:
-            output_file.write(base64.b64decode(image_data))
-
-        return True, "Imagem decodificada com sucesso"
-    except json.JSONDecodeError as json_err:
-        return False, f"Erro ao decodificar JSON: {str(json_err)}"
-    except ValueError as val_err:
-        return False, str(val_err)
-    except Exception as e:
-        return False, f"Erro ao decodificar a imagem: {str(e)}"
+    # Retorna o JSON de resposta ou um erro, conforme a situação
+    return jsonify(response_json), response.status_code
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=3002)
