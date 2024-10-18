@@ -88,8 +88,8 @@ def predict():
         }
 
         # Enviando as imagens para as respectivas rotas
-        response_tratada = requests.post('http://192.168.0.212:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
-        response_mask = requests.post('http://192.168.0.212:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
+        response_tratada = requests.post('http://host.docker.internal:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
+        response_mask = requests.post('http://1host.docker.internal:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
         data_tratada = response_tratada.json()
         data_mask = response_mask.json()
         
@@ -181,7 +181,7 @@ def predict():
     response_json = {}
 
     # Faz a requisição
-    response = requests.post('http://192.168.0.212:3005/post_json', json=json_incompleto_para_a_rota_terminar)
+    response = requests.post('http://host.docker.internal:3005/post_json', json=json_incompleto_para_a_rota_terminar)
 
     # Verificação da resposta
     if response.status_code == 201:
