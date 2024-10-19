@@ -43,62 +43,44 @@ services:
       - pgadmin
       - postgres
 
-  #controller-preferencia-area:
-  #  image: jonasrsribeiro/nc-controller-preferencia-area:develop
-  #  ports:
-  #    - "3001:3001"
-  #  restart: always
-  #  networks:
-  #    rede_microsservicos:
-  #      ipv4_address: 172.18.0.5
-  #  depends_on:
-  #    - pgadmin
-  #    - postgres
-  #    - controller-cadastro-autenticacao
-  
-  #controller-obter-imagens:
-  #  image: jonasrsribeiro/nc-controller-obter-imagens:develop
-  #  ports:
-  #    - "3003:3003"
-  #  restart: always
-  #  networks:
-  #    rede_microsservicos:
-  #      ipv4_address: 172.18.0.8
-  #  depends_on:
-  #    - pgadmin
-  #    - postgres
-  #    - controller-cadastro-autenticacao
-  #    - controller-preferencia-area
-
-  #controller-conversor:
-  #  image: jonasrsribeiro/nc-controller-conversor:develop
-  #  ports:
-  #    - "3004:3004"
-  #  restart: always
-  #  networks:
-  #    rede_microsservicos:
-  #      ipv4_address: 172.18.0.9
-  #  depends_on:
-  #    - pgadmin
-  #    - postgres
-  #    - controller-cadastro-autenticacao
-  #    - controller-preferencia-area
-  #    - controller-obter-imagens
-
   controller-identificacao-ia:
     image: jonasrsribeiro/nc-controller-identificacao-ia:develop
     ports:
       - "3002:3002"
     networks:
       rede_microsservicos:
-        ipv4_address: 172.18.0.7
+        ipv4_address: 172.18.0.5
     depends_on:
       - pgadmin
       - postgres
       - controller-cadastro-autenticacao
-  #    - controller-preferencia-area
-  #    - controller-obter-imagens
-  #    - controller-conversor
+
+  controller-obter-imagens:
+    image: jonasrsribeiro/nc-controller-obter-imagens:develop
+    ports:
+      - "3003:3003"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.6
+    depends_on:
+      - postgres
+      - pgadmin
+      - controller-cadastro-autenticacao
+      - controller-identificacao-ia
+
+  controller-firebase:
+    image: jonasrsribeiro/nc-controller-firebase:develop
+    ports:
+      - "3004:3004"
+    networks:
+      rede_microsservicos:
+        ipv4_address: 172.18.0.7
+    depends_on:
+      - postgres
+      - pgadmin
+      - controller-cadastro-autenticacao
+      - controller-identificacao-ia
+      - controller-obter-imagens
 
   frontend:
     image: jonasrsribeiro/nc-controller-frontend:develop
@@ -110,15 +92,14 @@ services:
       - NODE_ENV=development
     networks:
       rede_microsservicos:
-        ipv4_address: 172.18.0.6
+        ipv4_address: 172.18.0.8
     depends_on:
       - pgadmin
       - postgres
       - controller-cadastro-autenticacao
-      #- controller-preferencia-area
-      #- controller-obter-imagens
-      #- controller-conversor
       - controller-identificacao-ia
+      - controller-obter-imagens
+      - controller-firebase
 
 volumes:
   postgres-data:
