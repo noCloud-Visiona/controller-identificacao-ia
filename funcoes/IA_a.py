@@ -13,6 +13,6 @@ def IA(image):
 
     remontar(tile_dir=Caminho.Caminho.IMG_MERGED.value, tile_height=640, tile_width=640, tiles_per_col=23, tiles_per_row=23, filler_color=(0, 0, 0))
     remontar(tile_dir=Caminho.Caminho.IMG_MARK.value, tile_height=640, tile_width=640, tiles_per_col=23, tiles_per_row=23, filler_color=(0, 0, 0), tile_name="NIR_masked_output_0", final_file_name="mask_image_final")
-    percent = porcentagem_nuvem(mask="./mask_image_final.png", image="./imagem_final_montada.png")
+    percent = porcentagem_nuvem(mask="./mask_image_final.png", img="./imagem_final_montada.png")
     
     return "./mask_image_final.png", "imagem_final_montada.png", percent
