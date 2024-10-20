@@ -17,18 +17,20 @@ CORS(app)  # Habilitando o CORS para todas as rotas
 def predict():
     # ------------------------- Parte envolvendo receber o JSON do controller-INPE com a URL da imagem -------------------------
     data = request.get_json()
+    
+    print(data)
 
-    # Verifica se o JSON foi enviado e se contém o campo img_original_png
-    if not data or 'identificacao_ia' not in data or 'img_original_png' not in data['identificacao_ia']:
-        return jsonify({'error': 'JSON inválido ou campo img_original_png ausente'}), 400
+    band16_url = data.get('assets', {}).get('BAND16', {}).get('href')
+    if not band16_url:
+        return jsonify({"error": "BAND16 not found"}), 404
 
     # Obtém o campo img_original_png do JSON
-    img_url = data['identificacao_ia']['img_original_png']
+    img_url = band16_url
     print(img_url)
 
     image_filename = os.path.basename(img_url)
-    if not image_filename.endswith('.png'):  # Verifica se já tem a extensão .png
-        image_filename += '.png'
+    if not image_filename.endswith('.tif'):  # Verifica se já tem a extensão .tif
+        image_filename += '.tif'
     
     # Faz o download da imagem usando a URL fornecida
     try:
@@ -61,8 +63,8 @@ def predict():
         return jsonify({'error': 'Formato de imagem não suportado'}), 400
     
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
-    mask_path, imagem_tratada_pela_IA, porcentagem_nuvem = IA_a.IA(image_path)
-    imagem_tratada_pela_IA = cv2.imwrite(imagem_tratada_pela_IA, cv2.IMREAD_UNCHANGED)
+    mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
+    imagem_tratada_pela_IA = cv2.imwrite(caminho_imagem_tratada, cv2.IMREAD_UNCHANGED)
     nome_base = os.path.splitext(imagem_tratada_pela_IA.filename)[0]
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
@@ -77,19 +79,16 @@ def predict():
     porcentagem_nuvem = round(porcentagem_nuvem, 2)
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
-    imagem_IA_path = 'IA/img_mark_e_merged/merged_output_with_color.png'
-    imagem_mask_cloud_path = 'IA/img_mark_e_merged/mask_0.png'
-
     #rota pra salvar as 2 imagens no Bucket e receber as 2 url de volta
-    with open(imagem_IA_path, 'rb') as tratada_image, open(imagem_mask_cloud_path, 'rb') as nuvem_image:
+    with open(caminho_imagem_tratada, 'rb') as tratada_image, open(mask_path, 'rb') as nuvem_image:
         files = {
             'tratada': tratada_image,
             'nuvem': nuvem_image
         }
 
         # Enviando as imagens para as respectivas rotas
-        response_tratada = requests.post('http://192.168.0.212:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
-        response_mask = requests.post('http://192.168.0.212:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
+        response_tratada = requests.post('http://host.docker.internal:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
+        response_mask = requests.post('http://host.docker.internal:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
         data_tratada = response_tratada.json()
         data_mask = response_mask.json()
         
@@ -181,7 +180,7 @@ def predict():
     response_json = {}
 
     # Faz a requisição
-    response = requests.post('http://192.168.0.212:3005/post_json', json=json_incompleto_para_a_rota_terminar)
+    response = requests.post('http://host.docker.internal:3005/post_json', json=json_incompleto_para_a_rota_terminar)
 
     # Verificação da resposta
     if response.status_code == 201:
