@@ -13,8 +13,10 @@ load_dotenv('.env.dev')
 app = Flask(__name__)
 CORS(app)  # Habilitando o CORS para todas as rotas
 
-@app.route('/predict/', methods=['POST'])
+@app.route('/predict', methods=['POST', 'OPTIONS'])
 def predict():
+    if request.method == 'OPTIONS':
+        return '', 204 
     # ------------------------- Parte envolvendo receber o JSON do controller-INPE com a URL da imagem -------------------------
     data = request.get_json()
     
