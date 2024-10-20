@@ -55,19 +55,6 @@ services:
       - postgres
       - controller-cadastro-autenticacao
 
-  controller-obter-imagens:
-    image: jonasrsribeiro/nc-controller-obter-imagens:develop
-    ports:
-      - "3003:3003"
-    networks:
-      rede_microsservicos:
-        ipv4_address: 172.18.0.6
-    depends_on:
-      - postgres
-      - pgadmin
-      - controller-cadastro-autenticacao
-      - controller-identificacao-ia
-
   controller-firebase:
     image: jonasrsribeiro/nc-controller-firebase:develop
     ports:
@@ -80,7 +67,6 @@ services:
       - pgadmin
       - controller-cadastro-autenticacao
       - controller-identificacao-ia
-      - controller-obter-imagens
 
   frontend:
     image: jonasrsribeiro/nc-controller-frontend:develop
@@ -98,7 +84,6 @@ services:
       - postgres
       - controller-cadastro-autenticacao
       - controller-identificacao-ia
-      - controller-obter-imagens
       - controller-firebase
 
 volumes:

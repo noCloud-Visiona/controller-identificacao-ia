@@ -64,8 +64,8 @@ def predict():
     
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
     mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
-    imagem_tratada_pela_IA = cv2.imwrite(caminho_imagem_tratada, cv2.IMREAD_UNCHANGED)
-    nome_base = os.path.splitext(imagem_tratada_pela_IA.filename)[0]
+    imagem_tratada_pela_IA = cv2.imread(caminho_imagem_tratada, cv2.IMREAD_UNCHANGED)
+    print(imagem_tratada_pela_IA)
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
     data_atual = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -87,8 +87,8 @@ def predict():
         }
 
         # Enviando as imagens para as respectivas rotas
-        response_tratada = requests.post('http://host.docker.internal:3005/upload_image_tratada_png', files={'tratada': files['tratada']})
-        response_mask = requests.post('http://host.docker.internal:3005/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
+        response_tratada = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'tratada': files['tratada']})
+        response_mask = requests.post('http://host.docker.internal:3004/upload_image_nuvem_png', files={'nuvem': files['nuvem']})
         data_tratada = response_tratada.json()
         data_mask = response_mask.json()
         
@@ -96,7 +96,9 @@ def predict():
     tratada_url = data_tratada.get('tratada_url')
     nuvem_url = data_mask.get('nuvem_url')
 
-    id_usuario = data['identificacao_ia'].get('id_usuario', None)
+    id_usuario = 0
+
+    #id_usuario = data['identificacao_ia'].get('id_usuario', None)
 
     # Verifica se id_usuario não é None e se não é uma string
     if id_usuario is not None and not isinstance(id_usuario, str):
@@ -123,16 +125,16 @@ def predict():
         ],
         "bbox": data.get('bbox', None),
         "assets": {
-            "tci": {
-                "href": data['assets']['tci'].get('href', None),
-                "type": data['assets']['tci'].get('type', None),
-                "roles": data['assets']['tci'].get('roles', None),
-                "created": data['assets']['tci'].get('created', None),
-                "updated": data['assets']['tci'].get('updated', None),
-                "bdc:size": data['assets']['tci'].get('bdc:size', None),
-                "bdc:chunk_size": data['assets']['tci'].get('bdc:chunk_size', None),
-                "bdc:raster_size": data['assets']['tci'].get('bdc:raster_size', None),
-                "checksum:multihash": data['assets']['tci'].get('checksum:multihash', None)
+            "EVI": {
+                "href": data['assets']['EVI'].get('href', None),
+                "type": data['assets']['EVI'].get('type', None),
+                "roles": data['assets']['EVI'].get('roles', None),
+                "created": data['assets']['EVI'].get('created', None),
+                "updated": data['assets']['EVI'].get('updated', None),
+                "bdc:size": data['assets']['EVI'].get('bdc:size', None),
+                "bdc:chunk_size": data['assets']['EVI'].get('bdc:chunk_size', None),
+                "bdc:raster_size": data['assets']['EVI'].get('bdc:raster_size', None),
+                "checksum:multihash": data['assets']['EVI'].get('checksum:multihash', None)
             },
             "thumbnail": {
                 "href": data['assets']['thumbnail'].get('href', None),
@@ -157,22 +159,22 @@ def predict():
             "coordinates": data['user_geometry'].get('coordinates', None)
         },
         "identificacao_ia":{
-            "id": data['identificacao_ia'].get('id', None),
+            "id": data['id'],
             "area_visivel_mapa": area_visivel_mapa,
             "percentual_nuvem": porcentagem_nuvem,
             "percentual_sombra_nuvem": None,
             "id_usuario": id_usuario,
             "data": data_atual,
             "hora": hora_atual,
-            "img_original_png": data['identificacao_ia'].get('img_original_png', None),
-            "img_original_tiff": data['identificacao_ia'].get('img_original_tiff', None),
+            "img_original_png": data['id'],
+            "img_original_tiff": data['id'],
             "img_tratada": tratada_url,
             "mask_nuvem": nuvem_url,
             "mask_sombra": None,
             "tiff_tratado": None,
             "resolucao_imagem_png": resolucao_da_imagem,
             "resolucao_imagem_tiff": None,
-            "bbox": data['identificacao_ia'].get('bbox', None)
+            "bbox": data['bbox']
         }
     }
 
@@ -180,7 +182,7 @@ def predict():
     response_json = {}
 
     # Faz a requisição
-    response = requests.post('http://host.docker.internal:3005/post_json', json=json_incompleto_para_a_rota_terminar)
+    response = requests.post('http://host.docker.internal:3004/post_json', json=json_incompleto_para_a_rota_terminar)
 
     # Verificação da resposta
     if response.status_code == 201:
