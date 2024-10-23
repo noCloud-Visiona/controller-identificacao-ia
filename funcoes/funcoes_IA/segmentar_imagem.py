@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 from ultralytics import YOLO
 from funcoes.enums import Caminho
-from funcoes.funcoes_IA.tratar_imagem import tratar_imagem_cinza
+from funcoes.funcoes_IA.tratar_imagem import tratar_imagem_rgb
 from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
 from funcoes.funcoes_IA.processar_resultado import processar_resultado
 
@@ -32,7 +32,7 @@ def segmentar_imagens(images_path=Caminho.IMG_TILE.value):
                 image_path = os.path.join(root, file)
                 print(image_path)
                 imagem = cv2.imread(image_path)
-                imagem = tratar_imagem_cinza(imagem)
+                imagem = tratar_imagem_rgb(imagem)
                 nome_imagem_original = os.path.splitext(file)[0]
                 results = segmentar_imagem(imagem, model)
                 output_mask_path, merged_image = processar_resultado(results, imagem, nome_imagem_original)
