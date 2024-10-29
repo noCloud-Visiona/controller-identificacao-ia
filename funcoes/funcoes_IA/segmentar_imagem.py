@@ -5,7 +5,6 @@ import numpy as np
 from ultralytics import YOLO
 from funcoes.enums import Caminho
 from funcoes.funcoes_IA.tratar_imagem import tratar_imagem_rgb
-from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
 from funcoes.funcoes_IA.processar_resultado import processar_resultado
 
 def criar_mascara_binaria(imagem, path):

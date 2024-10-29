@@ -36,7 +36,7 @@ def filtrar_metadados(metadados):
 
 
 
-def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, filler_color, tiff_path, tile_name="RGB_merged_0", final_file_name="imagem_final_montada"):
+def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, filler_color, tiff_path, tile_name="NIR_merged_0", final_file_name="imagem_final_montada"):
     final_width = tile_width * tiles_per_row
     final_height = tile_height * tiles_per_col
     imagem_final = Image.new('RGB', (final_width, final_height))
