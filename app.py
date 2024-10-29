@@ -13,8 +13,8 @@ load_dotenv('.env.dev')
 app = Flask(__name__)
 CORS(app)  # Habilitando o CORS para todas as rotas
 
-@app.route('/predict', methods=['POST', 'OPTIONS'])
-def predict():
+@app.route('/predict/<id_usuario>', methods=['POST', 'OPTIONS'])
+def predict(id_usuario):
     if request.method == 'OPTIONS':
         return '', 204 
     # ------------------------- Parte envolvendo receber o JSON do controller-INPE com a URL da imagem -------------------------
@@ -97,16 +97,6 @@ def predict():
     # Obtendo as URLs das imagens
     tratada_url = data_tratada.get('tratada_url')
     nuvem_url = data_mask.get('nuvem_url')
-
-    id_usuario = 0
-
-    #id_usuario = data['identificacao_ia'].get('id_usuario', None)
-
-    # Verifica se id_usuario não é None e se não é uma string
-    if id_usuario is not None and not isinstance(id_usuario, str):
-        id_usuario = str(id_usuario)
-    else:
-        return "id_usuario inválido"
 
     # Salva no Firestore o JSON que o frontend precisa consumir
     json_incompleto_para_a_rota_terminar = {
