@@ -26,7 +26,7 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
                 tile_filename_prefix = f"{linha_num}_{tile_count}"
                 tile_count += 1
 
-                image_filename = f"{tile_filename_prefix}_NIR.png"
+                image_filename = f"{tile_filename_prefix}_RGB.png"
                 image_path = os.path.join(image_output_dir, image_filename)
 
                 if tile.max() > 0:
@@ -50,39 +50,27 @@ def recortar_imagem_rgb(tiff_path, image_output_dir, tile_size):
     # Abrir o arquivo TIFF original (contendo bandas R, G e B)
     with rasterio.open(tiff_path) as src:
         width, height = src.width, src.height
-        transform = src.transform
 
         tile_count = 0
         
         for j in range(0, height, tile_size):  # Para as linhas (j)
             for i in range(0, width, tile_size):  # Para as colunas (i)
-                window = rasterio.windows.Window(i, j, tile_size, tile_size)
-                tile_transform = src.window_transform(window)
-                
-                # Ler as três bandas
-                red = src.read(1, window=window)   # Banda R
-                green = src.read(2, window=window) # Banda G
-                blue = src.read(3, window=window)  # Banda B
-                
+                window = rasterio.windows.Window(i, j, tile_size, tile_size)                
+                red = src.read(1, window=window)   
+                green = src.read(2, window=window) 
+                blue = src.read(3, window=window)  
+    
                 linha_num = j // tile_size
                 tile_filename_prefix = f"{linha_num}_{tile_count}"
                 tile_count += 1
-
-                # Normalizar cada banda
-                red_normalized = (red / red.max() * 255).astype(np.uint8) if red.max() > 0 else np.zeros_like(red, dtype=np.uint8)
-                green_normalized = (green / green.max() * 255).astype(np.uint8) if green.max() > 0 else np.zeros_like(green, dtype=np.uint8)
-                blue_normalized = (blue / blue.max() * 255).astype(np.uint8) if blue.max() > 0 else np.zeros_like(blue, dtype=np.uint8)
-
-                # Empilhar as bandas normalizadas em uma única imagem RGB
-                rgb_image = np.stack((red_normalized, green_normalized, blue_normalized), axis=-1)
-
-                # Verifica se a imagem é completamente preta
-                if np.all(rgb_image == 0):
-                    print(f"Imagem {tile_filename_prefix} ignorada (completamente preta).")
-                    continue
+                src_teste = np.stack((red.astype(np.uint8), green.astype(np.uint8), blue.astype(np.uint8)), axis=-1)
+                if np.all(src_teste == 0):
+                     print(f"Imagem {tile_filename_prefix} ignorada (completamente preta).")
+                     continue
+               
 
                 # Criar a imagem PIL
-                img = Image.fromarray(rgb_image, mode='RGB')
+                img = Image.fromarray(src_teste, mode='RGB')
                 image_filename = f"{tile_filename_prefix}_RGB.png"
                 image_path = os.path.join(image_output_dir, image_filename)
                 img.save(image_path)

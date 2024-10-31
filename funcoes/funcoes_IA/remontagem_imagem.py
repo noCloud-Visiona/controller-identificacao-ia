@@ -1,10 +1,11 @@
 from PIL import Image, TiffTags
 import os
+from osgeo import gdal
+import numpy as np
 
-Image.MAX_IMAGE_PIXELS = None  # Isso desativa completamente o limite
 
+Image.MAX_IMAGE_PIXELS = None  
 
-# Função para carregar um tile com base no nome do arquivo
 def load_tile(tile_filename, tile_dir):
     tile_path = os.path.join(tile_dir, tile_filename)
     return Image.open(tile_path)
@@ -34,8 +35,6 @@ def filtrar_metadados(metadados):
                 print(f"Tipo não suportado para a tag {tag}: {valor}")
     return metadados_filtrados
 
-
-
 def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, filler_color, tiff_path, tile_name="RGB_merged_0", final_file_name="imagem_final_montada"):
     final_width = tile_width * tiles_per_row
     final_height = tile_height * tiles_per_col
@@ -47,34 +46,46 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     print(f"Metadados originais: {metadados}")  # Imprime os metadados originais para depuração
     metadados_filtrados = filtrar_metadados(metadados)  
     print(f"Metadados filtrados: {metadados_filtrados}") 
-
+    tiff_original = gdal.Open(tiff_path)
+    metadados = tiff_original.GetMetadata()
+    geotransform = tiff_original.GetGeoTransform()
+    projection = tiff_original.GetProjection()
     # Itera sobre cada tile baseado nos índices da matriz
     for row_index in range(tiles_per_col):
         for col_index in range(tiles_per_row):
             # Nome do arquivo do tile, baseado na sua posição
             tile_filename = f"{row_index}_{col_index}_{tile_name}.png"
             print(tile_filename)
-
             try:
                 tile = load_tile(tile_filename, tile_dir)
             except FileNotFoundError:
                 print(f"Tile {tile_filename} não encontrado. Pulando.")
                 continue
-
             # Verifica as dimensões do tile
             current_tile_width, current_tile_height = get_tile_dimensions(tile)
-
             x_position = col_index * tile_width
             y_position = row_index * tile_height
-
             # Criar um fundo do tamanho correto e colar o tile
             background = Image.new('RGB', (tile_width, tile_height), filler_color)
             background.paste(tile, (0, 0, current_tile_width, current_tile_height))
-
             imagem_final.paste(background, (x_position, y_position))
-    
-    # Salva a imagem final montada em formato TIFF com os metadados filtrados
-    print(f"Metadados originais: {metadados}")  # Imprime os metadados originais para depuração
+    imagem_array = np.array(imagem_final)
 
-    imagem_final.save(f'{final_file_name}.tiff', format='TIFF', tiffinfo=metadados)
+    driver = gdal.GetDriverByName("GTiff")
+    output_tiff = driver.Create(final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"])
+
+    print("Output_tiff 0: ", output_tiff)
+
+    # Configurações de metadados e geoinformação
+    output_tiff.SetGeoTransform(geotransform)
+    output_tiff.SetProjection(projection)
+    output_tiff.SetMetadata(metadados)
+
+    # Escrever cada banda na imagem
+    print("Escrever cada banda na imagem")
+    for i in range(3):  # Assumindo RGB, 3 bandas
+        output_tiff.GetRasterBand(i + 1).WriteArray(imagem_array[:, :, i])
+
+    print("Salvando Imagem:")
+    output_tiff.FlushCache()
     print("Imagem final montada com sucesso, com metadados preservados!")
