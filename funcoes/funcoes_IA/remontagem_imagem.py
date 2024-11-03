@@ -40,8 +40,7 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     final_height = tile_height * tiles_per_col
     imagem_final = Image.new('RGB', (final_width, final_height))
     
-    # Carregar a imagem TIFF original para extrair os metadados
-    tiff_original = Image.open(tiff_path)  # Aqui não vai mais gerar o erro
+    tiff_original = Image.open(tiff_path)  
     metadados = tiff_original.tag_v2
     print(f"Metadados originais: {metadados}")  # Imprime os metadados originais para depuração
     metadados_filtrados = filtrar_metadados(metadados)  
@@ -50,10 +49,8 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     metadados = tiff_original.GetMetadata()
     geotransform = tiff_original.GetGeoTransform()
     projection = tiff_original.GetProjection()
-    # Itera sobre cada tile baseado nos índices da matriz
     for row_index in range(tiles_per_col):
         for col_index in range(tiles_per_row):
-            # Nome do arquivo do tile, baseado na sua posição
             tile_filename = f"{row_index}_{col_index}_{tile_name}.png"
             print(tile_filename)
             try:
@@ -89,3 +86,36 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     print("Salvando Imagem:")
     output_tiff.FlushCache()
     print("Imagem final montada com sucesso, com metadados preservados!")
+
+def aplicar_mascara_tiff(imagem_path, mascara_path, output_path):
+    # Carregar imagem original
+    imagem_ds = gdal.Open(imagem_path)
+    imagem_array = imagem_ds.ReadAsArray()
+    
+    # Carregar imagem de máscara binária
+    mascara_ds = gdal.Open(mascara_path)
+    mascara_array = mascara_ds.ReadAsArray()
+    
+    # Verificar se as dimensões das imagens são iguais
+    if imagem_array.shape != mascara_array.shape:
+        raise ValueError("As dimensões da imagem e da máscara devem ser iguais.")
+    
+    # Aplicar a máscara: pixels onde a máscara é 0 ficam 0 na imagem de saída
+    imagem_recortada = np.where(mascara_array == 0, 0, imagem_array)
+    
+    # Criar o dataset de saída
+    driver = gdal.GetDriverByName("GTiff")
+    out_ds = driver.Create(output_path, imagem_ds.RasterXSize, imagem_ds.RasterYSize, 1, imagem_ds.GetRasterBand(1).DataType)
+    
+    # Copiar as informações geoespaciais da imagem original
+    out_ds.SetGeoTransform(imagem_ds.GetGeoTransform())
+    out_ds.SetProjection(imagem_ds.GetProjection())
+    
+    # Escrever o resultado no dataset de saída
+    out_ds.GetRasterBand(1).WriteArray(imagem_recortada)
+    
+    # Fechar os datasets para salvar e liberar a memória
+    out_ds.FlushCache()
+    imagem_ds = None
+    mascara_ds = None
+    out_ds = None
