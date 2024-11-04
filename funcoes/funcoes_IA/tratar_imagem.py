@@ -17,3 +17,8 @@ def tratar_imagem_cinza(image):
     gray_img_3ch = cv2.cvtColor(gray_img, cv2.COLOR_GRAY2BGR)
 
     return gray_img_3ch
+
+def tratar_imagem_rgb(image):
+    rgb_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    return rgb_img
