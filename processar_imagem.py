@@ -3,9 +3,8 @@ import cv2
 import requests
 import datetime
 from services import montar_json_response, processar_imagem_com_ia, enviar_json_final
-from app import processing_jobs
 
-def processar_imagem(image_path, json_data, job_id):
+def processar_imagem(image_path, json_data, job_id, processing_jobs, id_usuario):
     """
     Função para processar a imagem em segundo plano e enviar o resultado ao frontend.
     """
@@ -34,11 +33,12 @@ def processar_imagem(image_path, json_data, job_id):
             tratada_url,
             mask_path,  # ou a URL correta para a máscara
             data_atual,
-            hora_atual
+            hora_atual,
+            id_usuario
         )
         
-        processing_jobs[job_id]["status"] = "concluído"
+        processing_jobs[job_id]["status"] = "Análise concluída!"
         processing_jobs[job_id]["result"] = json_response  # O resultado que você deseja retornar
     except Exception as e:
-        processing_jobs[job_id]["status"] = "erro"
+        processing_jobs[job_id]["status"] = "Ops... Algo de errado aconteceu!"
         processing_jobs[job_id]["result"] = str(e)
