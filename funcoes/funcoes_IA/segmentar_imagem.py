@@ -9,6 +9,7 @@ from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
 from funcoes.funcoes_IA.processar_resultado import processar_resultado
 
 def criar_mascara_binaria(imagem, path):
+    print("Criando máscara binária...")
     mask = Image.new("L", imagem.size, 0)  # Cria uma imagem preta com o mesmo tamanho da imagem original
     nome_imagem = os.path.splitext(os.path.basename(path))[0]  # Obtém o nome da imagem original
     mask_path = os.path.join(os.path.dirname(path), f"{nome_imagem}_mask.png")
@@ -16,15 +17,18 @@ def criar_mascara_binaria(imagem, path):
     return mask_path
 
 def redimensionar_imagem(imagem, tamanho=(640, 640)):
+    print("Redimensionando a imagem...")
     if imagem.shape != tamanho:
         imagem = cv2.resize(imagem, tamanho)
     return imagem
 
 def segmentar_imagem(image, model):
+    print("Segmentando a imagem...")
     results = model(image)
     return results
 
 def segmentar_imagens(images_path=Caminho.IMG_TILE.value):
+    print("Segmentando imagens...")
     model = YOLO(Caminho.PESO.value)
     for root, dirs, files in os.walk(images_path):
         for file in files:

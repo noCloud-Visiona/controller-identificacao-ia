@@ -6,6 +6,7 @@ import cv2
 
 
 def recortar_imagem(tiff_path, image_output_dir, tile_size):
+    print("Recortando a imagem...")
 
     if not os.path.exists(image_output_dir):
        os.makedirs(image_output_dir)
@@ -44,6 +45,7 @@ def recortar_imagem(tiff_path, image_output_dir, tile_size):
     print("Processo concluído!")
 
 def recortar_imagem_rgb(tiff_path, image_output_dir, tile_size):
+    print("Recortando a imagem RGB...")
     if not os.path.exists(image_output_dir):
         os.makedirs(image_output_dir)
 

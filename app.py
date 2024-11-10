@@ -13,7 +13,6 @@ import base64
 import json
 
 # Importar funções de módulos
-from services import baixar_imagem, validar_formato_imagem
 from processar_imagem import processar_imagem
 
 # Carregando as variáveis de ambiente do arquivo .env.dev
@@ -26,13 +25,13 @@ CORS(app)  # Habilitando o CORS para todas as rotas
 limiter = Limiter(
     key_func=get_remote_address,  # Limita por endereço IP
     app=app,
-    default_limits=["10 per minute"]  # Limite padrão de 10 requisições por minuto
+    default_limits=["20 per minute"]  # Limite padrão de 10 requisições por minuto
 )
 
 processing_jobs = {}
 
 @app.route('/predict/<id_usuario>', methods=['POST', 'OPTIONS'])
-@limiter.limit("5 per minute")  # Limite específico para esse endpoint
+@limiter.limit("20 per minute")  # Limite específico para esse endpoint
 def novopredict(id_usuario):
     if request.method == 'OPTIONS':
         return '', 204
@@ -42,9 +41,9 @@ def novopredict(id_usuario):
     if not data:
         return jsonify({"error": "Nenhum dado fornecido"}), 400
     
-    band16_url = data.get('assets', {}).get('BAND16', {}).get('href')
+    band16_url = data.get('assets', {}).get('tci', {}).get('href')
     if not band16_url:
-        return jsonify({"error": "BAND16 não encontrada!"}), 404
+        return jsonify({"error": "tci não encontrada!"}), 404
 
     # Gerar um ID único para o trabalho
     job_id = str(uuid.uuid4())
@@ -55,15 +54,8 @@ def novopredict(id_usuario):
     os.makedirs(image_dir, exist_ok=True)
     image_path = os.path.join(image_dir, image_filename)
 
-    try:
-        # Baixar a imagem
-        image_path = baixar_imagem(band16_url, image_dir=image_dir)
-        validar_formato_imagem(image_path)
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
     # Inicia o processamento em segundo plano
-    thread = Thread(target=processar_imagem, args=(image_path, data, job_id, processing_jobs, id_usuario))  # Remove callback_url
+    thread = Thread(target=processar_imagem, args=(band16_url,image_dir,data, job_id, processing_jobs, id_usuario))  # Remove callback_url
     thread.start()
 
     return jsonify({"message": "A análise está em andamento!", "job_id": job_id}), 202
@@ -77,7 +69,7 @@ def status(job_id):
         return jsonify({"error": "Job ID não encontrado"}), 404
     
 @app.route('/imagem-predict/<id_usuario>', methods=['POST', 'OPTIONS'])
-def status(id_usuario):
+def imagem_predict(id_usuario):
     if not request.files:
         return jsonify({'error': 'Nenhuma imagem provida'}), 400
     

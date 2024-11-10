@@ -35,7 +35,10 @@ def filtrar_metadados(metadados):
                 print(f"Tipo não suportado para a tag {tag}: {valor}")
     return metadados_filtrados
 
+
+
 def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, filler_color, tiff_path, tile_name="RGB_merged_0", final_file_name="imagem_final_montada"):
+    block_size = 1024  # Tamanho do bloco de leitura
     final_width = tile_width * tiles_per_row
     final_height = tile_height * tiles_per_col
     imagem_final = Image.new('RGB', (final_width, final_height))
@@ -88,6 +91,7 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     print("Imagem final montada com sucesso, com metadados preservados!")
 
 def aplicar_mascara_tiff(imagem_path, mascara_path, output_path):
+    print("Aplicando máscara...")
     # Carregar imagem original
     imagem_ds = gdal.Open(imagem_path)
     imagem_array = imagem_ds.ReadAsArray()
