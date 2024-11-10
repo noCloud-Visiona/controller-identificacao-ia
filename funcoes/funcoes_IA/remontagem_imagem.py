@@ -160,7 +160,7 @@ def apply_inverse_mask(image_path, mask_path, output_path):
     try:
         mask = Image.open(mask_path).convert("L")  # "L" para escala de cinza
         mask = np.array(mask)
-        mask = cv2.bitwise_not(mask)  # Inverte a máscara
+        mask = cv2.bitwise_not(mask) 
     except Exception as e:
         raise ValueError(f"Erro ao carregar a máscara '{mask_path}' com PIL: {e}")
 
