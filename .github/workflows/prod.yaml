@@ -1,36 +1,30 @@
-name: CICD prod
+# Use uma imagem base do Miniconda
+FROM continuumio/miniconda3
 
-on:
-  push:
-    branches:
-      - prod
+# Atualize os pacotes do sistema e instale as dependências necessárias
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libsqlite3-dev \
+    sqlite3 \
+    && rm -rf /var/lib/apt/lists/*
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
+# Crie um ambiente Conda e instale o GDAL e SQLite com versões específicas
+RUN conda create -n myenv python=3.10 --yes && \
+    conda install -n myenv -c conda-forge gdal=3.4.1 sqlite=3.37.0 --yes
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+# Instale o restante dos pacotes usando pip
+COPY requirements.txt . 
+RUN conda run -n myenv pip install --no-cache-dir -r requirements.txt
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v2
-        with:
-          node-version: '20'
+# Verifique se GDAL está instalado corretamente
+RUN conda run -n myenv python -c "from osgeo import gdal; print(gdal.__version__)"
 
-      # - name: Install dependencies
-        # run: |
-          # npm install
+# Copie o restante do código da aplicação para o contêiner
+COPY . /app
+WORKDIR /app
 
-      - name: Build and tag Docker image for prodelopment
-        run: |
-          docker build -t jonasrsribeiro/nc-controller-identificacao-ia -f Dockerfile.prod .
-          docker tag jonasrsribeiro/nc-controller-identificacao-ia:latest jonasrsribeiro/nc-controller-identificacao-ia:prod
+# Exponha a porta 3002
+EXPOSE 3002
 
-      - name: Log in to Docker Hub
-        run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u jonasrsribeiro --password-stdin
-
-      - name: Push Docker image to Docker Hub
-        run: |
-          docker push jonasrsribeiro/nc-controller-identificacao-ia:latest
-          docker push jonasrsribeiro/nc-controller-identificacao-ia:prod
+# Ative o ambiente Conda e execute o aplicativo
+CMD ["conda", "run", "-n", "myenv", "python", "app.py"]

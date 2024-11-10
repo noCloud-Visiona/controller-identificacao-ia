@@ -44,7 +44,7 @@ services:
       - postgres
 
   controller-identificacao-ia:
-    image: jonasrsribeiro/nc-controller-identificacao-ia:develop
+    image: jonasrsribeiro/nc-controller-identificacao-ia:prod
     ports:
       - "3002:3002"
     networks:

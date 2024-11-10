@@ -22,5 +22,5 @@ def IA(image):
 
 
     #percent = porcentagem_nuvem(mask="./mask_image_final.png", img="./imagem_final_montada.png")
-    
-    #return "./mask_image_final.png", "imagem_final_montada.png", percent
+    print("Retornando Imagem")
+    return "./mask_image_final.tiff", "./imagem_final_montada.tiff" , 0
