@@ -72,7 +72,7 @@ def remontar(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row, fi
     imagem_array = np.array(imagem_final)
 
     driver = gdal.GetDriverByName("GTiff")
-    output_tiff = driver.Create(final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"])
+    output_tiff = driver.Create(final_file_name + ".tif", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"])
 
     print("Output_tiff 0: ", output_tiff)
 
