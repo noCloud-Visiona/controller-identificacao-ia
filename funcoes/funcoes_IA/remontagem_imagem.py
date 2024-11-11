@@ -92,7 +92,7 @@ def remontar(img_png, tiff_path, final_file_name="imagem_final_montada"):
 
     driver = gdal.GetDriverByName("GTiff")
     output_tiff = driver.Create(
-        final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"]
+        final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=LZW", "BIGTIFF=YES"]
     )
 
     output_tiff.SetGeoTransform(geotransform)
@@ -115,62 +115,107 @@ def verify_image_with_pillow(image_path):
         print("Erro ao verificar a imagem com Pillow.")
         raise ValueError(f"Erro ao verificar a imagem '{image_path}': {e}")
 
-def apply_inverse_mask(image_np, mask_np, output_path):
-    print("Verificando o tamanho da máscara...")
-    if image_np.shape[:2] != mask_np.shape:
-        raise ValueError("A imagem e a máscara devem ter as mesmas dimensões.")
-
-    print("Invertendo a máscara...")
-    inverted_mask = cv2.bitwise_not(mask_np) 
-
-    print("Aplicando máscara inversa à imagem...")
-    result = cv2.bitwise_and(image_np[:, :, :3], image_np[:, :, :3], mask=inverted_mask)  
-    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGRA)  
-
-    transparent_pixels = (inverted_mask == 0)
-    result[transparent_pixels] = [0, 0, 0, 0]
-
-    cv2.imwrite(output_path, result)
-    print(f"Imagem recortada com máscara inversa salva em {output_path}")
-
-
-def apply_mask(image_path, mask_path, output_path):
+def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=512):
     print("Procurando arquivos de imagem e máscara...")
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Arquivo de imagem '{image_path}' não encontrado.")
     if not os.path.exists(mask_path):
         raise FileNotFoundError(f"Arquivo de máscara '{mask_path}' não encontrado.")
     
-    print("Carregando imagem com PIL e convertendo para OpenCV...")
+    print("Carregando imagem e máscara com PIL...")
     try:
         image = Image.open(image_path).convert("RGBA")
-        image_np = np.array(image)
+        mask = Image.open(mask_path).convert("L")
     except Exception as e:
-        raise ValueError(f"Erro ao carregar a imagem '{image_path}' com PIL: {e}")
+        raise ValueError(f"Erro ao carregar a imagem ou máscara com PIL: {e}")
     
-    print("Removendo pixels completamente pretos...")
-    black_pixels = (image_np[:, :, :3] == [0, 0, 0]).all(axis=2)
-    image_np[black_pixels] = [0, 0, 0, 0] 
+    image_width, image_height = image.size
+    result_image = Image.new("RGBA", (image_width, image_height))
 
-    print("Carregando máscara com PIL e convertendo para OpenCV...")
+    for y in range(0, image_height, chunk_size):
+        for x in range(0, image_width, chunk_size):
+            print(f"Processando chunk na posição ({x}, {y})")
+            box = (x, y, x + chunk_size, y + chunk_size)
+
+            # Extrair o bloco da imagem e da máscara
+            image_chunk = image.crop(box)
+            mask_chunk = mask.crop(box)
+
+            # Converter os blocos para arrays NumPy
+            image_chunk_np = np.array(image_chunk)
+            mask_chunk_np = np.array(mask_chunk)
+
+            # Garantir que os tamanhos sejam compatíveis
+            if image_chunk_np.shape[:2] != mask_chunk_np.shape:
+                raise ValueError("A imagem e a máscara devem ter as mesmas dimensões por chunk.")
+
+            # Inverter a máscara do chunk
+            inverted_mask_chunk = cv2.bitwise_not(mask_chunk_np)
+
+            # Aplicar a máscara inversa ao chunk da imagem
+            result_chunk = cv2.bitwise_and(image_chunk_np[:, :, :3], image_chunk_np[:, :, :3], mask=inverted_mask_chunk)
+            result_chunk = cv2.cvtColor(result_chunk, cv2.COLOR_RGB2BGRA)
+
+            # Tornar pixels transparentes onde a máscara é completamente preta
+            transparent_pixels = (inverted_mask_chunk == 0)
+            result_chunk[transparent_pixels] = [0, 0, 0, 0]
+
+            # Converter o resultado do chunk de volta para PIL e colá-lo na imagem de resultado
+            result_chunk_pil = Image.fromarray(result_chunk)
+            result_image.paste(result_chunk_pil, box[:2])
+
+    result_image.save(output_path)
+    print(f"Imagem recortada com máscara inversa salva em {output_path}")
+
+
+
+
+def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=512):
+    print("Procurando arquivos de imagem e máscara...")
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Arquivo de imagem '{image_path}' não encontrado.")
+    if not os.path.exists(mask_path):
+        raise FileNotFoundError(f"Arquivo de máscara '{mask_path}' não encontrado.")
+    
+    print("Carregando imagem e máscara com PIL...")
     try:
-        mask = Image.open(mask_path).convert("L")  # "L" para escala de cinza
-        mask_np = np.array(mask)
+        image = Image.open(image_path).convert("RGBA")
+        mask = Image.open(mask_path).convert("L")
     except Exception as e:
-        raise ValueError(f"Erro ao carregar a máscara '{mask_path}' com PIL: {e}")
+        raise ValueError(f"Erro ao carregar a imagem ou máscara com PIL: {e}")
+    
+    image_width, image_height = image.size
 
-    print("Verificando o tamanho da máscara...")
-    if image_np.shape[:2] != mask_np.shape:
-        raise ValueError("A imagem e a máscara devem ter as mesmas dimensões.")
+    print("Criando imagem de saída...")
+    result_image = Image.new("RGBA", (image_width, image_height))
 
-    print("Aplicando máscara à imagem...")
-    result = cv2.bitwise_and(image_np[:, :, :3], image_np[:, :, :3], mask=mask_np) 
-    result = cv2.cvtColor(result, cv2.COLOR_RGB2BGRA)
+    for y in range(0, image_height, chunk_size):
+        for x in range(0, image_width, chunk_size):
+            print(f"Processando chunk na posição ({x}, {y})")
+            box = (x, y, x + chunk_size, y + chunk_size)
 
-    result[black_pixels] = [0, 0, 0, 0]
+            image_chunk = image.crop(box)
+            mask_chunk = mask.crop(box)
+            
+            image_chunk_np = np.array(image_chunk)
+            mask_chunk_np = np.array(mask_chunk)
 
-    cv2.imwrite(output_path, result)
+            if image_chunk_np.shape[:2] != mask_chunk_np.shape:
+                raise ValueError("A imagem e a máscara devem ter as mesmas dimensões por chunk.")
+
+            black_pixels = (image_chunk_np[:, :, :3] == [0, 0, 0]).all(axis=2)
+            image_chunk_np[black_pixels] = [0, 0, 0, 0]
+
+            result_chunk = cv2.bitwise_and(image_chunk_np[:, :, :3], image_chunk_np[:, :, :3], mask=mask_chunk_np)
+            result_chunk = cv2.cvtColor(result_chunk, cv2.COLOR_RGB2BGRA)
+            result_chunk[black_pixels] = [0, 0, 0, 0]
+
+            result_chunk_pil = Image.fromarray(result_chunk)
+            result_image.paste(result_chunk_pil, box[:2])
+
+    result_image.save(output_path)
     print(f"Imagem recortada salva em {output_path}")
-    return mask_np, image_np
+
+
 
    
