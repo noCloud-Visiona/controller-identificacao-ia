@@ -1,25 +1,34 @@
-# Use uma imagem base do Miniconda
-FROM continuumio/miniconda3
+# Escolha uma imagem base compatível com o Python e o GDAL (necessário para rasterio)
+FROM python:3.10-slim
 
-# Atualize os pacotes do sistema e instale as dependências necessárias
+# Instala as dependências do sistema operacional necessárias para o GDAL e o rasterio
 RUN apt-get update && apt-get install -y \
     libgl1 \
-    && rm -rf /var/lib/apt/lists/*
+    libglib2.0-0 \
+    build-essential \
+    gdal-bin \
+    libgdal-dev \
+    python3-gdal \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Crie um ambiente Conda e instale as dependências do GDAL
-COPY requirements.txt . 
-RUN conda create -n myenv python=3.10 --yes && \
-    conda install -n myenv -c conda-forge gdal --yes
+# Define as variáveis de ambiente necessárias para o GDAL
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
 
-# Ative o ambiente e instale pacotes restantes via pip
-RUN conda run -n myenv pip install --no-cache-dir -r requirements.txt
+# Copia o arquivo requirements.txt para o container
+COPY requirements.txt .
 
-# Copie o restante do código da aplicação para o contêiner
-COPY . /app
+# Instala as dependências Python
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Define o diretório de trabalho do container
 WORKDIR /app
+
+# Copia o código da aplicação (opcional)
+COPY . /app
 
 # Exponha a porta 3002
 EXPOSE 3002
 
-# Ative o ambiente Conda e execute o aplicativo
-CMD ["conda", "run", "-n", "myenv", "python", "app.py"]
+# Define o ponto de entrada padrão (opcional)
+CMD ["python", "app.py"]
