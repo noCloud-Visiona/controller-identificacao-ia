@@ -92,7 +92,7 @@ def remontar(img_png, tiff_path, final_file_name="imagem_final_montada"):
 
     driver = gdal.GetDriverByName("GTiff")
     output_tiff = driver.Create(
-        final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=LZW", "BIGTIFF=YES"]
+        final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"]
     )
 
     output_tiff.SetGeoTransform(geotransform)
