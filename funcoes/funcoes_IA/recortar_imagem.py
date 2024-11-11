@@ -3,6 +3,7 @@ import numpy as np
 import os
 from PIL import Image
 import cv2
+import glob
 
 
 def recortar_imagem(tiff_path, image_output_dir, tile_size):
@@ -49,7 +50,6 @@ def recortar_imagem_rgb(tiff_path, image_output_dir, tile_size):
     if not os.path.exists(image_output_dir):
         os.makedirs(image_output_dir)
 
-    # Abrir o arquivo TIFF original (contendo bandas R, G e B)
     with rasterio.open(tiff_path) as src:
         width, height = src.width, src.height
 
@@ -59,31 +59,41 @@ def recortar_imagem_rgb(tiff_path, image_output_dir, tile_size):
         
         for j in range(0, height, tile_size):  # Para as linhas (j)
             for i in range(0, width, tile_size):  # Para as colunas (i)
-                #window = rasterio.windows.Window(i, j, tile_size, tile_size)                
-                #red = src.read(1, window=window)   
-                #green = src.read(2, window=window) 
-                #blue = src.read(3, window=window)  
+                window = rasterio.windows.Window(i, j, tile_size, tile_size)                
+                red = src.read(1, window=window)   
+                green = src.read(2, window=window) 
+                blue = src.read(3, window=window)  
     
                 linha_num = j // tile_size
-                #tile_filename_prefix = f"{linha_num}_{tile_count}"
+                tile_filename_prefix = f"{linha_num}_{tile_count}"
                 ultimo_tile = [linha_num, tile_count]
                 tile_count += 1
                 print(ultimo_tile)
-                #src_teste = np.stack((red.astype(np.uint8), green.astype(np.uint8), blue.astype(np.uint8)), axis=-1)
-                #if np.all(src_teste == 0):
-                     #print(f"Imagem {tile_filename_prefix} ignorada (completamente preta).")
-                     #continue
+                src_teste = np.stack((red.astype(np.uint8), green.astype(np.uint8), blue.astype(np.uint8)), axis=-1)
+                if np.all(src_teste == 0):
+                     print(f"Imagem {tile_filename_prefix} ignorada (completamente preta).")
+                     continue
                
 
-                # Criar a imagem PIL
-                #img = Image.fromarray(src_teste, mode='RGB')
-                #image_filename = f"{tile_filename_prefix}_RGB.png"
-                #image_path = os.path.join(image_output_dir, image_filename)
-                #img.save(image_path)
-                #print(f"Imagem {image_filename} salva.")
+                img = Image.fromarray(src_teste, mode='RGB')
+                image_filename = f"{tile_filename_prefix}_RGB.png"
+                image_path = os.path.join(image_output_dir, image_filename)
+                img.save(image_path)
+                print(f"Imagem {image_filename} salva.")
 
             tile_count = 0
 
     print("Processo concluído!")
     return ultimo_tile
+
+def limpar_diretorios(*diretorios):
+    """Remove todos os arquivos nas pastas especificadas."""
+    for diretorio in diretorios:
+        arquivos = glob.glob(os.path.join(diretorio, "*"))
+        for arquivo in arquivos:
+            try:
+                os.remove(arquivo)
+                print(f"Arquivo {arquivo} deletado.")
+            except Exception as e:
+                print(f"Erro ao deletar o arquivo {arquivo}: {e}")
 
