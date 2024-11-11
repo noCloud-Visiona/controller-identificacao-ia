@@ -1,20 +1,34 @@
-# Use uma imagem base do Python
+# Escolha uma imagem base compatível com o Python e o GDAL (necessário para rasterio)
 FROM python:3.10-slim
 
-# Defina o diretório de trabalho no contêiner
-WORKDIR /app
+# Instala as dependências do sistema operacional necessárias para o GDAL e o rasterio
+RUN apt-get update && apt-get install -y \
+    libgl1 \
+    libglib2.0-0 \
+    build-essential \
+    gdal-bin \
+    libgdal-dev \
+    python3-gdal \
+    --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
-# Copie o arquivo requirements.txt
+# Define as variáveis de ambiente necessárias para o GDAL
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+
+# Copia o arquivo requirements.txt para o container
 COPY requirements.txt .
 
-# Instale as dependências listadas no requirements.txt
+# Instala as dependências Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copie o restante do código da aplicação para o contêiner
+# Define o diretório de trabalho do container
+WORKDIR /app
+
+# Copia o código da aplicação (opcional)
 COPY . /app
 
-# Exponha a porta 5002
-EXPOSE 5002
+# Exponha a porta 3002
+EXPOSE 3002
 
-# Comando para rodar o aplicativo
+# Define o ponto de entrada padrão (opcional)
 CMD ["python", "app.py"]
