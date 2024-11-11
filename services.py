@@ -6,55 +6,42 @@ from funcoes import IA_a  # Importando o módulo IA para processamento
 from PIL import Image
 import numpy as np 
 
-def baixar_imagem1(img_url, image_dir="IA/img/"):
-    # image_filename = os.path.basename(img_url)
-    # if not image_filename.endswith('.tif'):
-    #     image_filename += '.tif'
-    # image_path = os.path.join(image_dir, image_filename)
-    image_path = "./IA/img/CBERS4A_WPM_PCA_RGB321_20240930_202_142.tif"
-    os.makedirs(image_dir, exist_ok=True)
-
-    return image_path
+def baixar_imagem(img_url, image_dir="IA/img/"):
+    image_filename = os.path.basename(img_url)
+    if not image_filename.endswith('.tif'):
+         image_filename += '.tif'
+    image_path = os.path.join(image_dir, image_filename)
+    
 
     headers = {'Range': 'bytes=0-'}
     max_retries = 3
     retry_delay = 10  # segundos
 
-    # for attempt in range(max_retries):
-    #     try:
-    #         with open(image_path, 'wb') as f:
-    #             pos = 0
-    #             chunk_size = 500 * 1024 * 1024
-    #             while True:
-    #                 headers['Range'] = f'bytes={pos}-{pos + chunk_size - 1}'
-    #                 response = requests.get(img_url, headers=headers, stream=True, timeout=60)
-    #                 if response.status_code in [206, 200]:
-    #                     f.write(response.content)
-    #                     pos += len(response.content)
-    #                     if len(response.content) < chunk_size:
-    #                         break
-    #                 else:
-    #                     raise ValueError(f"Erro no download da imagem com código de resposta: {response.status_code}")
-    #         return image_path
+    for attempt in range(max_retries):
+         try:
+             with open(image_path, 'wb') as f:
+                 pos = 0
+                 chunk_size = 500 * 1024 * 1024
+                 while True:
+                     headers['Range'] = f'bytes={pos}-{pos + chunk_size - 1}'
+                     response = requests.get(img_url, headers=headers, stream=True, timeout=60)
+                     if response.status_code in [206, 200]:
+                         f.write(response.content)
+                         pos += len(response.content)
+                         if len(response.content) < chunk_size:
+                             break
+                     else:
+                         raise ValueError(f"Erro no download da imagem com código de resposta: {response.status_code}")
+             return image_path
 
-        #except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
-            # print(f"[ERRO] Timeout na tentativa {attempt + 1}/{max_retries}. Retentando em {retry_delay} segundos...")
-            # time.sleep(retry_delay)
-    #     except requests.exceptions.RequestException as e:
-    #         print(f"[ERRO] Erro ao tentar baixar a imagem: {e}")
-    #         raise e
-    # raise ValueError("Erro ao baixar a imagem após várias tentativas")
+         except (requests.exceptions.ConnectTimeout, requests.exceptions.ReadTimeout) as e:
+             print(f"[ERRO] Timeout na tentativa {attempt + 1}/{max_retries}. Retentando em {retry_delay} segundos...")
+             time.sleep(retry_delay)
+         except requests.exceptions.RequestException as e:
+             print(f"[ERRO] Erro ao tentar baixar a imagem: {e}")
+             raise e
+    raise ValueError("Erro ao baixar a imagem após várias tentativas")
 
-def baixar_imagem(img_url, image_dir="IA/img/"):
-    """Retorna o caminho da imagem existente para testes sem realizar o download."""
-    image_path = "./IA/img/CBERS4A_WPM_PCA_RGB321_20240930_202_142.tif"
-
-    # Verifica se a imagem já existe no local especificado
-    if os.path.exists(image_path):
-        print(f"[INFO] Usando a imagem local em {image_path}.")
-        return image_path
-    else:
-        raise FileNotFoundError(f"[ERRO] Imagem não encontrada em {image_path}.")
 
 def validar_formato_imagem(image_path):
     """Valida o formato da imagem e remove se não for suportado."""
