@@ -20,9 +20,11 @@ def IA(image):
     remontar(img_png="./imagem_final_cortada_nuvem_montada.png", tiff_path=image, final_file_name="imagem_final_cortada_nuvem_montada")
     remontar(img_png="./imagem_final_cortada_sem_nuvem.png", tiff_path=image, final_file_name="imagem_final_cortada_sem_nuvem")
     
-    limpar_diretorios(Caminho.Caminho.IMG_TILE.value, Caminho.Caminho.IMG_MARK.value, Caminho.Caminho.IMG_MERGED.value, Caminho.Caminho.IMG_TIFF.value)
+   
 
     percent = porcentagem_nuvem(mask="./mask_image_PNG.png", img="./imagem_PNG_montada.png")
     print(f"A porcentagem de nuvem na imagem é de {percent}%")
+
+    limpar_diretorios(Caminho.Caminho.IMG_TILE.value, Caminho.Caminho.IMG_MARK.value, Caminho.Caminho.IMG_MERGED.value, Caminho.Caminho.IMG_TIFF.value, "./mask_image_PNG.png", "./imagem_PNG_montada.png", "./imagem_final_cortada_nuvem_montada.png", "./imagem_final_cortada_sem_nuvem.png")
 
     return "./imagem_final_cortada_nuvem_montada.tiff", "./imagem_final_cortada_sem_nuvem.tiff" , 0
