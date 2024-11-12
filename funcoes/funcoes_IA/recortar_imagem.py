@@ -87,13 +87,15 @@ def recortar_imagem_rgb(tiff_path, image_output_dir, tile_size):
     return ultimo_tile
 
 def limpar_diretorios(*diretorios):
-    """Remove todos os arquivos nas pastas especificadas."""
+    """Remove todos os arquivos nas pastas especificadas, exceto arquivos .keep, sem deletar as pastas."""
     for diretorio in diretorios:
         arquivos = glob.glob(os.path.join(diretorio, "*"))
         for arquivo in arquivos:
-            try:
-                os.remove(arquivo)
-                print(f"Arquivo {arquivo} deletado.")
-            except Exception as e:
-                print(f"Erro ao deletar o arquivo {arquivo}: {e}")
-
+            if os.path.isfile(arquivo) and not arquivo.endswith(".keep"):  # Verifica se é um arquivo e não termina com .keep
+                try:
+                    os.remove(arquivo)
+                    print(f"Arquivo {arquivo} deletado.")
+                except Exception as e:
+                    print(f"Erro ao deletar o arquivo {arquivo}: {e}")
+            else:
+                print(f"{arquivo} não será deletado (pode ser uma pasta ou um arquivo .keep).")
