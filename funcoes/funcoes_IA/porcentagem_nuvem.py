@@ -1,28 +1,50 @@
+import os
 import cv2
 import numpy as np
+from PIL import Image
 
 
+def porcentagem_nuvem(mask, img, target_size=(1000, 1000)): 
+    if not os.path.exists(img):
+        print(f"Imagem não encontrada: {img}")
+        return 0
+    if not os.path.exists(mask):
+        print(f"Mascara não encontrada: {mask}")
+        return 0
 
-def porcentagem_nuvem(mask, img):
-    image = cv2.imread(img, cv2.IMREAD_UNCHANGED)
-    print(image.shape)
-    H, W, _ = image.shape
-    mask_path = mask  # Substitua pelo caminho da sua máscara
-    mask = cv2.imread(mask_path, cv2.IMREAD_GRAYSCALE) 
-    mask = cv2.resize(mask, (W, H))
+    try:
+        image_pil = Image.open(img)
+        image_resized_pil = image_pil.resize(target_size, Image.Resampling.LANCZOS) 
+        image_resized = np.array(image_resized_pil)  
+    except Exception as e:
+        print(f"Erro ao abrir ou redimensionar a imagem: {e}")
+        return 0
 
-    # Se a imagem tiver 4 canais (RGBA), você pode desconsiderar os pixels transparentes
-    if image.shape[2] == 4:
-        # O canal alfa (transparência) está no índice 3
-        alpha_channel = image[:, :, 3]
-        # Criar uma máscara binária que identifica os pixels que não são transparentes (alfa != 0)
+    print(f"Imagem original tamanho: {image_pil.size}")
+    print(f"Tamanho da imagem redimensionada: {image_resized.shape}")
+
+    if image_resized.shape[2] == 4:
+        alpha_channel = image_resized[:, :, 3]
         non_transparent_mask = alpha_channel != 0
     else:
-        # Se a imagem for RGB ou escala de cinza, basta considerar todos os pixels
-        non_transparent_mask = np.ones(image.shape[:2], dtype=bool)
-    total_non_transparent_pixels = np.sum(non_transparent_mask)
+        non_transparent_mask = np.ones(image_resized.shape[:2], dtype=bool)
+    
+    H, W = image_resized.shape[:2]
 
-    masked_pixels = np.sum((mask > 0) & non_transparent_mask)
+
+    try:
+        mask_pil = Image.open(mask)
+        mask_resized_pil = mask_pil.resize((W, H), Image.Resampling.LANCZOS)
+        mask_resized = np.array(mask_resized_pil)  
+    except Exception as e:
+        print(f"Erro ao abrir ou redimensionar a máscara: {e}")
+        return 0
+    total_non_transparent_pixels = np.sum(non_transparent_mask)
+    masked_pixels = np.sum((mask_resized > 0) & non_transparent_mask)
+
+    print(f"Total de pixels não transparentes: {total_non_transparent_pixels}")
+    print(f"Total de pixels com máscara: {masked_pixels}")
+
     if total_non_transparent_pixels > 0:
         coverage_percentage = (masked_pixels / total_non_transparent_pixels) * 100
         print(f"Porcentagem da imagem coberta pela máscara: {coverage_percentage:.2f}%")
@@ -30,7 +52,6 @@ def porcentagem_nuvem(mask, img):
     else:
         print("Não há pixels válidos para calcular a cobertura.")
         return 0
-
 
 
 
