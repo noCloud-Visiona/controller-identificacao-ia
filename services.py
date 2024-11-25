@@ -42,6 +42,18 @@ def baixar_imagem(img_url, image_dir="IA/img/"):
              raise e
     raise ValueError("Erro ao baixar a imagem após várias tentativas")
 
+def baixar_imagem1(img_url, image_dir="IA/img/"):
+    """Retorna o caminho da imagem existente para testes sem realizar o download."""
+    image_path = "./IA/img/CBERS4A_WPM_PCA_RGB321_20240930_202_142.tif"
+
+    # Verifica se a imagem já existe no local especificado
+    if os.path.exists(image_path):
+        print(f"[INFO] Usando a imagem local em {image_path}.")
+        return image_path
+    else:
+        raise FileNotFoundError(f"[ERRO] Imagem não encontrada em {image_path}.")
+
+
 
 def validar_formato_imagem(image_path):
     """Valida o formato da imagem e remove se não for suportado."""
