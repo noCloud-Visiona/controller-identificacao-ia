@@ -37,6 +37,7 @@ def novopredict(id_usuario):
         return '', 204
 
     data = request.get_json()
+    print(f"[INFO] JSON recebido na rota /predict/{id_usuario}: {data}")
     
     if not data:
         return jsonify({"error": "Nenhum dado fornecido"}), 400
