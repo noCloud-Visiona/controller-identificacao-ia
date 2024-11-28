@@ -98,7 +98,12 @@ def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nu
     print(f"[INFO] Área visível no mapa: {area_visivel_mapa}%")
     porcentagem_nuvem = round(porcentagem_nuvem, 2)
     print(f"[INFO] Porcentagem de nuvem: {porcentagem_nuvem}%")
-
+    print(f"[INFO] Data atual: {data_atual}, Hora atual: {hora_atual}")
+    print(f"[INFO] URL da imagem tratada: {tratada_url}")
+    print(f"[INFO] URL da máscara de nuvem: {nuvem_url}")
+    print(f"[INFO] Caminho da imagem tratada: {caminho_imagem_tratada}")
+    print(f"[INFO] Bounding box da imagem: {data['bbox']}")
+    
     # JSON response estruturado
     return {
         "type": data.get('type', None),
