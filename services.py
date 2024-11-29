@@ -6,7 +6,7 @@ from funcoes import IA_a  # Importando o módulo IA para processamento
 from PIL import Image
 import numpy as np 
 
-def baixar_imagem(img_url, image_dir="IA/img/"):
+def baixar_imagem1(img_url, image_dir="IA/img/"):
     image_filename = os.path.basename(img_url)
     if not image_filename.endswith('.tif'):
          image_filename += '.tif'
@@ -42,7 +42,7 @@ def baixar_imagem(img_url, image_dir="IA/img/"):
              raise e
     raise ValueError("Erro ao baixar a imagem após várias tentativas")
 
-def baixar_imagem1(img_url, image_dir="IA/img/"):
+def baixar_imagem(img_url, image_dir="IA/img/"):
     """Retorna o caminho da imagem existente para testes sem realizar o download."""
     image_path = "./IA/img/CBERS4A_WPM_PCA_RGB321_20240930_202_142.tif"
 
@@ -66,14 +66,15 @@ def validar_formato_imagem(image_path):
 def processar_imagem_com_ia(image_path):
     """Processa a imagem utilizando o módulo IA e retorna dados da imagem processada."""
     # Processa a imagem usando IA, que gera os caminhos das imagens tratadas
-    mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
-    print(f"[INFO] Imagem retornou com sucesso após processamento com IA: {caminho_imagem_tratada}")
+    #mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
+    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent = IA_a.IA(image_path)
+    print(f"[INFO] Imagem retornou com sucesso após processamento com IA: {thumbnail_imagem}")
     
     # Configura o limite máximo de pixels no Pillow
     Image.MAX_IMAGE_PIXELS = None  # Define como 'None' para desativar a verificação de limite de pixels
     
     # Abra a imagem tratada usando Pillow
-    with Image.open(caminho_imagem_tratada) as pil_img:
+    with Image.open(thumbnail_imagem) as pil_img:
         # Converte a imagem Pillow para um array numpy que o OpenCV pode processar
         imagem_tratada = np.array(pil_img)
         print(f"[INFO] Imagem tratada carregada com sucesso: {imagem_tratada.shape}")
@@ -87,18 +88,20 @@ def processar_imagem_com_ia(image_path):
         imagem_tratada = imagem_tratada[:, :, ::-1]
         print(f"[INFO] Imagem tratada convertida para BGR: {imagem_tratada.shape}")
     print(f"[INFO] Imagem tratada convertida para BGR: {imagem_tratada.shape}")
-    return mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada
+    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada
 
-def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada, tratada_url, nuvem_url, data_atual, hora_atual, id_usuario):
-    """Monta o JSON final para enviar ao front."""
+#def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada, tratada_url, nuvem_url, data_atual, hora_atual, id_usuario):
+def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imagem_sem_nuvem_url, imagem_sem_sombra_url, imagem_nuvem_url, imagem_sombra_url, thumbnail_sem_nuvem_url, thumbnail_sem_sombra_url, thumbnail_nuvem_url, thumbnail_sombra_url, thumbnail_imagem_url, imagem_tratada):
     print(f"[INFO] Montando JSON final para envio ao frontend...")
     resolucao_da_imagem = f"{imagem_tratada.shape[1]}x{imagem_tratada.shape[0]}"
     print(f"[INFO] Resolução da imagem tratada: {resolucao_da_imagem}")
-    area_visivel_mapa = round(100 - porcentagem_nuvem, 2)
+    area_visivel_mapa = round(100 - percent, 2)
     print(f"[INFO] Área visível no mapa: {area_visivel_mapa}%")
-    porcentagem_nuvem = round(porcentagem_nuvem, 2)
-    print(f"[INFO] Porcentagem de nuvem: {porcentagem_nuvem}%")
-
+    percent = round(percent, 2)
+    print(f"[INFO] Porcentagem de nuvem: {percent}%")
+    print(f"[INFO] Data atual: {data_atual}, Hora atual: {hora_atual}")
+    print(f"[INFO] Bounding box da imagem: {data['bbox']}")
+    
     # JSON response estruturado
     return {
         "type": data.get('type', None),
@@ -151,25 +154,31 @@ def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nu
             "type": data['user_geometry'].get('type', None),
             "coordinates": data['user_geometry'].get('coordinates', None)
         },
-        "identificacao_ia":{
-            "id": data['id'],
-            "area_visivel_mapa": area_visivel_mapa,
-            "percentual_nuvem": porcentagem_nuvem,
-            "percentual_sombra_nuvem": None,
-            "id_usuario": id_usuario,
-            "data": data_atual,
-            "hora": hora_atual,
-            "img_original_png": data['id'],
-            "img_original_tiff": data['id'],
-            "img_tratada": tratada_url,
-            "mask_nuvem": nuvem_url,
-            "mask_sombra": None,
-            "tiff_tratado": caminho_imagem_tratada,
-            "resolucao_imagem_png": resolucao_da_imagem,
-            "resolucao_imagem_tiff": None,
-            "bbox": data['bbox']
-        }
+    "identificacao_ia": {
+        "id": data['id'],
+        "area_visivel_mapa": area_visivel_mapa,
+        "percentual_nuvem": percent,
+        "percentual_sombra_nuvem": None,
+        "id_usuario": id_usuario,
+        "data": data_atual,
+        "hora": hora_atual,
+        "img_original_png": data['id'],
+        "img_original_tiff": data['id'],
+        "mask_sombra": None,
+        "resolucao_imagem_png": resolucao_da_imagem,
+        "resolucao_imagem_tiff": None,
+        "bbox": data['bbox'],
+        "imagem_sem_nuvem_url": imagem_sem_nuvem_url,
+        "imagem_sem_sombra_url": imagem_sem_sombra_url,
+        "imagem_nuvem_url": imagem_nuvem_url,
+        "imagem_sombra_url": imagem_sombra_url,
+        "thumbnail_sem_nuvem_url": thumbnail_sem_nuvem_url,
+        "thumbnail_sem_sombra_url": thumbnail_sem_sombra_url,
+        "thumbnail_nuvem_url": thumbnail_nuvem_url,
+        "thumbnail_sombra_url": thumbnail_sombra_url,
+        "thumbnail_imagem_url": thumbnail_imagem_url,
     }
+}
 
 def enviar_json_final(json_response):
     print(f"[INFO] Enviando JSON final para a rota especificada...")
