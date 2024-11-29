@@ -75,23 +75,35 @@ def remontar_rgb(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row
             tile, position = future.result()
             if tile:
                 imagem_final.paste(tile, position)
+    if final_file_name=="imagem_PNG_montada":
+        thumbnail = imagem_final.resize((1000, 1000))   
+        thumbnail.save(f'{final_file_name}_thumbnail.png')
+        
     imagem_final.save(f'{final_file_name}.png')
     print("Imagem final ajustada montada com sucesso!")
 
 
 def remontar(img_png, tiff_path, final_file_name="imagem_final_montada"):
+    # Abrir o TIFF original para obter metadados
     tiff_original = gdal.Open(tiff_path)
     metadados = tiff_original.GetMetadata()
     geotransform = tiff_original.GetGeoTransform()
     projection = tiff_original.GetProjection()
 
-    imagem_png = Image.open(img_png).convert("RGB")
+    # Abrir o PNG com canal alfa
+    imagem_png = Image.open(img_png).convert("RGBA")  # Preserva o canal alfa
     final_width, final_height = imagem_png.size  
     imagem_array = np.array(imagem_png)
 
+    # Criar o TIFF de saída
     driver = gdal.GetDriverByName("GTiff")
     output_tiff = driver.Create(
-        final_file_name + ".tiff", final_width, final_height, 3, gdal.GDT_Byte, options=["COMPRESS=DEFLATE", "BIGTIFF=YES"]
+        final_file_name + ".tiff",
+        final_width,
+        final_height,
+        4,  
+        gdal.GDT_Byte,
+        options=["COMPRESS=DEFLATE", "BIGTIFF=YES"]
     )
 
     output_tiff.SetGeoTransform(geotransform)
@@ -101,9 +113,12 @@ def remontar(img_png, tiff_path, final_file_name="imagem_final_montada"):
     for i in range(3):  
         output_tiff.GetRasterBand(i + 1).WriteArray(imagem_array[:, :, i])
 
+    alpha_band = output_tiff.GetRasterBand(4)
+    alpha_band.WriteArray(imagem_array[:, :, 3]) 
+    alpha_band.SetNoDataValue(0) 
+    # Finalizar
     output_tiff.FlushCache()
-    print("Imagem PNG convertida para TIFF com sucesso, usando metadados do TIFF original!")
-
+    print("Imagem PNG convertida para TIFF com sucesso, com fundo transparente usando metadados do TIFF original!")
 
 def verify_image_with_pillow(image_path):
     try:
@@ -170,7 +185,7 @@ def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=
 
 
 
-def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024):
+def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024, overlay_color=(255, 0, 0, 128)):
     print("Procurando arquivos de imagem e máscara...")
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Arquivo de imagem '{image_path}' não encontrado.")
@@ -180,7 +195,7 @@ def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024):
     print("Carregando imagem e máscara com PIL...")
     try:
         image = Image.open(image_path).convert("RGBA")
-        mask = Image.open(mask_path).convert("L")
+        mask = Image.open(mask_path).convert("L")  # Carregar máscara em escala de cinza
     except Exception as e:
         raise ValueError(f"Erro ao carregar a imagem ou máscara com PIL: {e}")
     
@@ -194,29 +209,39 @@ def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024):
             print(f"Processando chunk na posição ({x}, {y})")
             box = (x, y, x + chunk_size, y + chunk_size)
 
+            # Crop dos chunks de imagem e máscara
             image_chunk = image.crop(box)
             mask_chunk = mask.crop(box)
             
+            # Converter chunks para numpy arrays
             image_chunk_np = np.array(image_chunk)
             mask_chunk_np = np.array(mask_chunk)
 
             if image_chunk_np.shape[:2] != mask_chunk_np.shape:
                 raise ValueError("A imagem e a máscara devem ter as mesmas dimensões por chunk.")
 
-            black_pixels = (image_chunk_np[:, :, :3] == [0, 0, 0]).all(axis=2)
-            image_chunk_np[black_pixels] = [0, 0, 0, 0]
+            mask_applied = mask_chunk_np > 0  # Onde a máscara é diferente de zero (afetar)
 
-            result_chunk = cv2.bitwise_and(image_chunk_np[:, :, :3], image_chunk_np[:, :, :3], mask=mask_chunk_np)
-            result_chunk = cv2.cvtColor(result_chunk, cv2.COLOR_RGB2BGRA)
-            result_chunk[black_pixels] = [0, 0, 0, 0]
+            image_chunk_np[~mask_applied, 3] = 0  
 
-            result_chunk_pil = Image.fromarray(result_chunk)
+            overlay_np = np.zeros_like(image_chunk_np, dtype=np.uint8)
+            overlay_np[:, :, :3] = overlay_color[:3]  
+            overlay_np[:, :, 3] = overlay_color[3]  
+            
+            alpha = overlay_np[:, :, 3] / 255.0  
+            for c in range(3):  
+                image_chunk_np[mask_applied, c] = (
+                    image_chunk_np[mask_applied, c] * (1 - alpha[mask_applied])
+                    + overlay_np[mask_applied, c] * alpha[mask_applied]
+                )
+            
+            result_chunk_pil = Image.fromarray(image_chunk_np)
             result_image.paste(result_chunk_pil, box[:2])
+    
     thumbnail = result_image.resize((256, 256))
-    thumbnail.save(output_path+"_thumbnail.png")
-    result_image.save(output_path+".png")
+    thumbnail.save(output_path + "_thumbnail.png")
+    result_image.save(output_path + ".png")
     print(f"Imagem recortada salva em {output_path}")
-
 
 
    

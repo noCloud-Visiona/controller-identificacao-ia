@@ -34,30 +34,58 @@ def processar_resultado(results, image, nome_imagem_original):
 
     H, W, _ = image.shape
 
+    # Inicializa os caminhos de saída para as máscaras separadas
+    output_cloud_mask_path = None
+    output_shadow_mask_path = None
+
     # Processar os resultados
     for result in results:
         if not result.masks:
             print("O resultado não contém máscaras.")
             output_mask_path, merged_image = mascara_binaria(image, nome_imagem_original, H, W)
             return output_mask_path, merged_image
-        else: 
-            for j, mask in enumerate(result.masks.data):
-                mask = mask.numpy()
-                mask = cv2.resize(mask, (W, H))  # Certifica-se de que as dimensões estão corretas
+        else:
+            # Obter as classes associadas às boxes
+            classes = result.boxes.cls.cpu().numpy().astype(int)  # Classes das detecções
+            masks = result.masks.data.cpu().numpy()  # Máscaras como arrays numpy
 
-                output_mask_path = f"./IA/img_mark/{nome_imagem_original}_masked_output_{j}.png"  # Nome do arquivo para a máscara
-                cv2.imwrite(output_mask_path, mask * 255)  # Salva a máscara como uma imagem
+            cloud_mask = None
+            shadow_mask = None
 
-                mask_img = cv2.imread(output_mask_path, cv2.IMREAD_GRAYSCALE)
-                
-                # Verifica se a máscara tem apenas 1 canal e expande para 3 canais
-                mask_color = cv2.cvtColor(mask_img, cv2.COLOR_GRAY2BGR)
-                mask_color[mask_img > 0] = [0, 0, 255]  # Cor vermelha onde a máscara é aplicada
+            for mask, cls in zip(masks, classes):
+                mask = cv2.resize(mask, (W, H)) 
 
-                merged_image = cv2.addWeighted(image, 0.7, mask_color, 0.3, 0) 
-                merged_output_path = f"./IA/img_merged/{nome_imagem_original}_merged_{j}.png"
-                cv2.imwrite(merged_output_path, merged_image)
+                if cls == 0:  
+                    if cloud_mask is None:
+                        cloud_mask = mask
+                    else:
+                        cloud_mask = cv2.bitwise_or(cloud_mask, mask)
+                elif cls == 1:  
+                    if shadow_mask is None:
+                        shadow_mask = mask
+                    else:
+                        shadow_mask = cv2.bitwise_or(shadow_mask, mask)
 
-                print(f"Merge completo. Imagem salva como {nome_imagem_original}_merged_{j}.png .")
+            if cloud_mask is not None:
+                output_cloud_mask_path = f"./IA/img_mark/{nome_imagem_original}_cloud_mask.png"
+                cv2.imwrite(output_cloud_mask_path, (cloud_mask * 255).astype('uint8'))
 
-                return output_mask_path, merged_image
+            if shadow_mask is not None:
+                output_shadow_mask_path = f"./IA/img_mark/{nome_imagem_original}_shadow_mask.png"
+                cv2.imwrite(output_shadow_mask_path, (shadow_mask * 255).astype('uint8'))
+
+            if cloud_mask is not None:
+                cloud_color = cv2.cvtColor((cloud_mask * 255).astype('uint8'), cv2.COLOR_GRAY2BGR)
+                cloud_color[cloud_mask > 0] = [255, 0, 0]  # Azul para nuvens
+                merged_cloud_image = cv2.addWeighted(image, 0.7, cloud_color, 0.3, 0)
+                merged_cloud_output_path = f"./IA/img_merged/{nome_imagem_original}_merged_cloud.png"
+                cv2.imwrite(merged_cloud_output_path, merged_cloud_image)
+
+            if shadow_mask is not None:
+                shadow_color = cv2.cvtColor((shadow_mask * 255).astype('uint8'), cv2.COLOR_GRAY2BGR)
+                shadow_color[shadow_mask > 0] = [0, 0, 255]  # Vermelho para sombras
+                merged_shadow_image = cv2.addWeighted(image, 0.7, shadow_color, 0.3, 0)
+                merged_shadow_output_path = f"./IA/img_merged/{nome_imagem_original}_merged_shadow.png"
+                cv2.imwrite(merged_shadow_output_path, merged_shadow_image)
+
+            return output_cloud_mask_path, output_shadow_mask_path
