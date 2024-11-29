@@ -29,5 +29,13 @@ def IA(image):
     #print(f"A porcentagem de nuvem na imagem é de {percent}%")
 
     limpar_diretorios(Caminho.Caminho.IMG_TILE.value, Caminho.Caminho.IMG_MARK.value, Caminho.Caminho.IMG_MERGED.value, Caminho.Caminho.IMG_TIFF.value, "./mask_image_PNG.png", "./imagem_PNG_montada.png", "./imagem_final_cortada_nuvem_montada.png", "./imagem_final_cortada_sem_nuvem.png")
+    imagem_sem_nuvem = "./imagem_sem_nuvem_montada.tiff"
+    imagem_sem_sombra = "./imagem_sem_sombra_montada.tiff"
+    imagem_nuvem = "./imagem_nuvem_montada.tiff"
+    imagem_sombra = "./imagem_sombra_montada.tiff"
+    thumbnail_sem_nuvem = "./sem_nuvem_thumbnail.png"
+    thumbnail_sem_sombra = "./sem_sombra_thumbnail.png"
+    thumbnail_nuvem = "./nuvem_thumbnail.png"
+    thumbnail_sombra = "./sombra_thumbnail.png"
 
-    return "./imagem_final_cortada_nuvem_montada.tiff", "./imagem_final_cortada_sem_nuvem.tiff" , percent
+    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra , percent
