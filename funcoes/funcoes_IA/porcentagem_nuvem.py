@@ -23,7 +23,7 @@ def porcentagem_nuvem(mask, img, target_size=(1000, 1000)):
     print(f"Imagem original tamanho: {image_pil.size}")
     print(f"Tamanho da imagem redimensionada: {image_resized.shape}")
 
-    if image_resized.shape[2] == 4:
+    if image_resized.shape[2] == 4:  # Imagem com canal alfa
         alpha_channel = image_resized[:, :, 3]
         non_transparent_mask = alpha_channel != 0
     else:
@@ -31,14 +31,14 @@ def porcentagem_nuvem(mask, img, target_size=(1000, 1000)):
     
     H, W = image_resized.shape[:2]
 
-
     try:
-        mask_pil = Image.open(mask)
+        mask_pil = Image.open(mask).convert("L")  # Converter para escala de cinza
         mask_resized_pil = mask_pil.resize((W, H), Image.Resampling.LANCZOS)
-        mask_resized = np.array(mask_resized_pil)  
+        mask_resized = np.array(mask_resized_pil)  # Array 2D (escala de cinza)
     except Exception as e:
         print(f"Erro ao abrir ou redimensionar a máscara: {e}")
         return 0
+
     total_non_transparent_pixels = np.sum(non_transparent_mask)
     masked_pixels = np.sum((mask_resized > 0) & non_transparent_mask)
 
