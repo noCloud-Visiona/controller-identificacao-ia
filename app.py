@@ -48,7 +48,16 @@ def novopredict(id_usuario):
 
     # Gerar um ID único para o trabalho
     job_id = str(uuid.uuid4())
-    processing_jobs[job_id] = {"status": "Análise em andamento, por favor aguarde uns instantes!", "result": None}  # Inicializa o trabalho
+    processing_jobs[job_id] = {"status": "Análise em andamento, por favor aguarde uns instantes!", "result": None}
+
+    # Inicializa o trabalho
+    response = requests.post('http://host.docker.internal:3004/post_job_id/id_usuario/job_id', id_usuario=id_usuario, job_id=job_id)
+
+    # Verificação da resposta
+    if response.status_code == 201:
+        response_json = response.json()
+    else:
+        print("Erro ao salvar o job_id:", response.status_code, response.text)
 
     image_filename = os.path.basename(band16_url) + '.tif'
     image_dir = "IA/img/"
@@ -61,11 +70,12 @@ def novopredict(id_usuario):
 
     return jsonify({"message": "A análise está em andamento!", "job_id": job_id}), 202
 
-@app.route('/status/<job_id>', methods=['GET'])
-def status(job_id):
-    job = processing_jobs.get(job_id)
-    if job:
-        return jsonify(job), 200
+@app.route('/status/<id_usuario>/<job_id>', methods=['GET'])
+def status(id_usuario, job_id):
+    job = requests.get('http://host.docker.internal:3004/get_job_id/id_usuario/job_id', id_usuario=id_usuario, job_id=job_id)
+    job_processing = processing_jobs.get(job.get('job_id'))
+    if job_processing:
+        return jsonify(job_processing), 200
     else:
         return jsonify({"error": "Job ID não encontrado"}), 404
     
