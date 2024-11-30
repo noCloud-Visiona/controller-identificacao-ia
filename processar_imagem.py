@@ -92,7 +92,7 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             files = {'imagem_sem_nuvem': sem_nuvem_image}
             response_sem_nuvem = requests.post('http://host.docker.internal:3004/upload_imagem_sem_nuvem', files={'imagem_sem_nuvem': files['imagem_sem_nuvem']})
             imagem_sem_nuvem_url = response_sem_nuvem.json().get('imagem_sem_nuvem_url')
-            print(f"[INFO] URL da imagem tratada: {imagem_sem_nuvem_url}")
+            print(f"[INFO] URL da imagem sem nuvem: {imagem_sem_nuvem_url}")
 
         # Enviar imagem "sem sombra"
         with open(imagem_sem_sombra, 'rb') as sem_sombra_image:

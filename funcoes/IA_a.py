@@ -41,6 +41,6 @@ def IA(image):
     thumbnail_nuvem = "./nuvem_thumbnail.png"
     thumbnail_sombra = "./sombra_thumbnail.png"
     thumbnail_imagem = "./imagem_PNG_montada_thumbnail_original.png"
-    thumbnail_imagem_tratada = 'imagem_PNG_montada_thumbnail_tratada.png'
+    thumbnail_imagem_tratada = './imagem_PNG_montada_thumbnail_tratada.png'
 
     return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, thumbnail_imagem_tratada, percent

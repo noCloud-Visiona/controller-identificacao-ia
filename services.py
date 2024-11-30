@@ -66,7 +66,8 @@ def validar_formato_imagem(image_path):
 def processar_imagem_com_ia(image_path):
     """Processa a imagem utilizando o módulo IA e retorna dados da imagem processada."""
     # Processa a imagem usando IA, que gera os caminhos das imagens tratadas
-    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, thumbnail_imagem_tratada = IA_a.IA(image_path)
+    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, thumbnail_imagem_tratada, percent = IA_a.IA(image_path)
+
     print(f"[INFO] Imagem retornou com sucesso após processamento com IA: {thumbnail_imagem}")
     
     # Configura o limite máximo de pixels no Pillow
@@ -90,9 +91,9 @@ def processar_imagem_com_ia(image_path):
     return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada, thumbnail_imagem_tratada
 
 #def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada, tratada_url, nuvem_url, data_atual, hora_atual, id_usuario):
-def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imagem_sem_nuvem_url, imagem_sem_sombra_url, imagem_nuvem_url, imagem_sombra_url, thumbnail_sem_nuvem_url, thumbnail_sem_sombra_url, thumbnail_nuvem_url, thumbnail_sombra_url, thumbnail_imagem_url, imagem_tratada, thumbnail_imagem_original_url, thumbnail_tratada_url):
+def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imagem_sem_nuvem_url, imagem_sem_sombra_url, imagem_nuvem_url, imagem_sombra_url, thumbnail_sem_nuvem_url, thumbnail_sem_sombra_url, thumbnail_nuvem_url, thumbnail_sombra_url, thumbnail_imagem_url, thumbnail_tratada_url, imagem_tratada):
     print(f"[INFO] Montando JSON final para envio ao frontend...")
-    resolucao_da_imagem = f"{imagem_tratada.shape[1]}x{imagem_tratada.shape[0]}"
+    resolucao_da_imagem = f"{imagem_tratada.shape[1]}x{imagem_tratada.shape[0]}" 
     print(f"[INFO] Resolução da imagem tratada: {resolucao_da_imagem}")
     area_visivel_mapa = round(100 - percent, 2)
     print(f"[INFO] Área visível no mapa: {area_visivel_mapa}%")
@@ -177,7 +178,7 @@ def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imag
         "thumbnail_nuvem_url": thumbnail_nuvem_url,
         "thumbnail_sombra_url": thumbnail_sombra_url,
         "thumbnail_imagem_url": thumbnail_imagem_url,
-        "thumbnail_imagem_original_url": thumbnail_imagem_original_url,
+        "thumbnail_imagem_original_url": thumbnail_imagem_url,
     }
 }
 
