@@ -183,7 +183,62 @@ def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=
     print(f"Imagem recortada com máscara inversa salva em {output_path}")
 
 
+def apply_two_masks(image_path, mask1_path, mask2_path, output_path, color_mask1=(255, 0, 0, 128), color_mask2=(0, 0, 255, 128)):
+    print("Procurando arquivos de imagem e máscaras...")
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Arquivo de imagem '{image_path}' não encontrado.")
+    if not os.path.exists(mask1_path):
+        raise FileNotFoundError(f"Arquivo de máscara 1 '{mask1_path}' não encontrado.")
+    if not os.path.exists(mask2_path):
+        raise FileNotFoundError(f"Arquivo de máscara 2 '{mask2_path}' não encontrado.")
+    
+    print("Carregando imagem e máscaras com PIL...")
+    try:
+        image = Image.open(image_path).convert("RGBA")
+        mask1 = Image.open(mask1_path).convert("L")  
+        mask2 = Image.open(mask2_path).convert("L")
+    except Exception as e:
+        raise ValueError(f"Erro ao carregar a imagem ou máscaras com PIL: {e}")
+    
+    image_np = np.array(image)
+    mask1_np = np.array(mask1)
+    mask2_np = np.array(mask2)
 
+    if image_np.shape[:2] != mask1_np.shape or image_np.shape[:2] != mask2_np.shape:
+        raise ValueError("A imagem e as máscaras devem ter as mesmas dimensões.")
+
+    print("Criando máscaras coloridas...")
+    overlay_mask1 = np.zeros_like(image_np, dtype=np.uint8)
+    overlay_mask2 = np.zeros_like(image_np, dtype=np.uint8)
+
+    overlay_mask1[:, :, :3] = color_mask1[:3]
+    overlay_mask1[:, :, 3] = color_mask1[3]
+    
+    overlay_mask2[:, :, :3] = color_mask2[:3]
+    overlay_mask2[:, :, 3] = color_mask2[3]
+
+    print("Aplicando máscaras sobre a imagem...")
+    mask1_applied = mask1_np > 0
+    mask2_applied = mask2_np > 0
+
+    alpha1 = overlay_mask1[:, :, 3] / 255.0
+    alpha2 = overlay_mask2[:, :, 3] / 255.0
+
+    for c in range(3):  # Para R, G, B
+        image_np[mask1_applied, c] = (
+            image_np[mask1_applied, c] * (1 - alpha1[mask1_applied])
+            + overlay_mask1[mask1_applied, c] * alpha1[mask1_applied]
+        )
+        image_np[mask2_applied, c] = (
+            image_np[mask2_applied, c] * (1 - alpha2[mask2_applied])
+            + overlay_mask2[mask2_applied, c] * alpha2[mask2_applied]
+        )
+
+    print("Salvando imagem final...")
+    result_image = Image.fromarray(image_np)
+    result_image = result_image.resize((1000, 1000))
+    result_image.save(output_path + ".png")
+    print(f"Imagem com máscaras aplicadas salva em {output_path}.png")
 
 def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024, overlay_color=(255, 0, 0, 128)):
     print("Procurando arquivos de imagem e máscara...")
