@@ -6,7 +6,7 @@ from funcoes import IA_a  # Importando o módulo IA para processamento
 from PIL import Image
 import numpy as np 
 
-def baixar_imagem1(img_url, image_dir="IA/img/"):
+def baixar_imagem(img_url, image_dir="IA/img/"):
     image_filename = os.path.basename(img_url)
     if not image_filename.endswith('.tif'):
          image_filename += '.tif'
@@ -42,7 +42,7 @@ def baixar_imagem1(img_url, image_dir="IA/img/"):
              raise e
     raise ValueError("Erro ao baixar a imagem após várias tentativas")
 
-def baixar_imagem(img_url, image_dir="IA/img/"):
+def baixar_imagem1(img_url, image_dir="IA/img/"):
     """Retorna o caminho da imagem existente para testes sem realizar o download."""
     image_path = "./IA/img/CBERS4A_WPM_PCA_RGB321_20240930_202_142.tif"
 
