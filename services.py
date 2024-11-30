@@ -66,8 +66,7 @@ def validar_formato_imagem(image_path):
 def processar_imagem_com_ia(image_path):
     """Processa a imagem utilizando o módulo IA e retorna dados da imagem processada."""
     # Processa a imagem usando IA, que gera os caminhos das imagens tratadas
-    #mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
-    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent = IA_a.IA(image_path)
+    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, thumbnail_imagem_tratada = IA_a.IA(image_path)
     print(f"[INFO] Imagem retornou com sucesso após processamento com IA: {thumbnail_imagem}")
     
     # Configura o limite máximo de pixels no Pillow
@@ -88,10 +87,10 @@ def processar_imagem_com_ia(image_path):
         imagem_tratada = imagem_tratada[:, :, ::-1]
         print(f"[INFO] Imagem tratada convertida para BGR: {imagem_tratada.shape}")
     print(f"[INFO] Imagem tratada convertida para BGR: {imagem_tratada.shape}")
-    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada
+    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada, thumbnail_imagem_tratada
 
 #def montar_json_response(data, mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada, tratada_url, nuvem_url, data_atual, hora_atual, id_usuario):
-def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imagem_sem_nuvem_url, imagem_sem_sombra_url, imagem_nuvem_url, imagem_sombra_url, thumbnail_sem_nuvem_url, thumbnail_sem_sombra_url, thumbnail_nuvem_url, thumbnail_sombra_url, thumbnail_imagem_url, imagem_tratada):
+def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imagem_sem_nuvem_url, imagem_sem_sombra_url, imagem_nuvem_url, imagem_sombra_url, thumbnail_sem_nuvem_url, thumbnail_sem_sombra_url, thumbnail_nuvem_url, thumbnail_sombra_url, thumbnail_imagem_url, imagem_tratada, thumbnail_imagem_original_url, thumbnail_tratada_url):
     print(f"[INFO] Montando JSON final para envio ao frontend...")
     resolucao_da_imagem = f"{imagem_tratada.shape[1]}x{imagem_tratada.shape[0]}"
     print(f"[INFO] Resolução da imagem tratada: {resolucao_da_imagem}")
@@ -172,17 +171,23 @@ def montar_json_response(data, percent, data_atual, hora_atual, id_usuario, imag
         "imagem_sem_sombra_url": imagem_sem_sombra_url,
         "imagem_nuvem_url": imagem_nuvem_url,
         "imagem_sombra_url": imagem_sombra_url,
+        "img_tratada": thumbnail_tratada_url,
         "thumbnail_sem_nuvem_url": thumbnail_sem_nuvem_url,
         "thumbnail_sem_sombra_url": thumbnail_sem_sombra_url,
         "thumbnail_nuvem_url": thumbnail_nuvem_url,
         "thumbnail_sombra_url": thumbnail_sombra_url,
         "thumbnail_imagem_url": thumbnail_imagem_url,
+        "thumbnail_imagem_original_url": thumbnail_imagem_original_url,
     }
 }
 
 def enviar_json_final(json_response):
     print(f"[INFO] Enviando JSON final para a rota especificada...")
-    """Envia o JSON final para a rota especificada."""
-    response = requests.post('http://host.docker.internal:3004/post_json', json=json_response)
-    print(f"[INFO] Resposta da requisição: {response.text}")
-    return response
+    try:
+        response = requests.post('http://host.docker.internal:3004/post_json', json=json_response)
+        response.raise_for_status()  # Levanta uma exceção se a resposta tiver um erro HTTP
+        # print(f"[INFO] Resposta da requisição: {response.text}")
+        return response.json()  # Retorna o JSON diretamente
+    except requests.exceptions.RequestException as e:
+        print(f"[ERRO] Erro ao enviar o JSON: {e}")
+        return None

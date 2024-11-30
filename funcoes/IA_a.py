@@ -20,7 +20,7 @@ def IA(image):
     apply_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_shadow_PNG.png", output_path="./sombra",  overlay_color=(0, 0, 255, 128))
     apply_inverse_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_cloud_PNG.png", output_path="./sem_nuvem")
     apply_inverse_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_shadow_PNG.png", output_path="./sem_sombra")
-    apply_two_masks(image_path="./imagem_PNG_montada.png", mask1_path="./mask_cloud_PNG.png", mask2_path="./mask_shadow_PNG.png", output_path="./imagem_PNG_montada_thumbnail", color_mask1=(255, 0, 0, 128), color_mask2=(0, 0, 255, 128))
+    apply_two_masks(image_path="./imagem_PNG_montada.png", mask1_path="./mask_cloud_PNG.png", mask2_path="./mask_shadow_PNG.png", output_path="./imagem_PNG_montada_thumbnail_tratada", color_mask1=(255, 0, 0, 128), color_mask2=(0, 0, 255, 128))
 
 
     remontar(img_png="./nuvem.png", tiff_path=image, final_file_name="imagem_nuvem_montada")
@@ -40,6 +40,7 @@ def IA(image):
     thumbnail_sem_sombra = "./sem_sombra_thumbnail.png"
     thumbnail_nuvem = "./nuvem_thumbnail.png"
     thumbnail_sombra = "./sombra_thumbnail.png"
-    thumbnail_imagem = "./imagem_PNG_montada_thumbnail.png"
+    thumbnail_imagem = "./imagem_PNG_montada_thumbnail_original.png"
+    thumbnail_imagem_tratada = 'imagem_PNG_montada_thumbnail_tratada.png'
 
-    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem , percent
+    return imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, thumbnail_imagem_tratada, percent

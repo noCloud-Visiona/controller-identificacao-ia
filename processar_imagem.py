@@ -76,7 +76,7 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
 
         # Processar a imagem recortada
         print("[INFO] Iniciando o processamento da imagem com IA...")
-        imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada = processar_imagem_com_ia(cropped_image_path)
+        imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada, thumbnail_imagem_tratada = processar_imagem_com_ia(cropped_image_path)
         print("[INFO] Processamento concluído.")
 
         # Obter informações de data e hora
@@ -92,7 +92,7 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             files = {'imagem_sem_nuvem': sem_nuvem_image}
             response_sem_nuvem = requests.post('http://host.docker.internal:3004/upload_imagem_sem_nuvem', files={'imagem_sem_nuvem': files['imagem_sem_nuvem']})
             imagem_sem_nuvem_url = response_sem_nuvem.json().get('imagem_sem_nuvem_url')
-            print(f"[INFO] URL da imagem sem nuvem: {imagem_sem_nuvem_url}")
+            print(f"[INFO] URL da imagem tratada: {imagem_sem_nuvem_url}")
 
         # Enviar imagem "sem sombra"
         with open(imagem_sem_sombra, 'rb') as sem_sombra_image:
@@ -149,6 +149,13 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             response_thumbnail_imagem = requests.post('http://host.docker.internal:3004/upload_thumbnail_imagem_original', files={'thumbnail_imagem_original': files['thumbnail_imagem_original']})
             thumbnail_imagem_url = response_thumbnail_imagem.json().get('thumbnail_imagem_original_url')
             print(f"[INFO] URL do thumbnail da imagem original: {thumbnail_imagem_url}")
+            
+        # Enviar thumbnail tratada
+        with open(thumbnail_imagem_tratada, 'rb') as imagem_thumbnail_tratada:
+            files = {'tratada': imagem_thumbnail_tratada}
+            response_thumbnail_imagem_tratada = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'tratada': files['tratada']})
+            thumbnail_tratada_url = response_thumbnail_imagem_tratada.json().get('tratada_url')
+            print(f"[INFO] URL da imagem sem nuvem: {thumbnail_tratada_url}")
 
         # Montar o JSON final
         json_response = montar_json_response(
@@ -166,12 +173,15 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             thumbnail_nuvem_url,
             thumbnail_sombra_url,
             thumbnail_imagem_url,
+            thumbnail_tratada_url,
             imagem_tratada
         )
         
-        print(f"[INFO] JSON final montado: {json_response}")
+        json_final = enviar_json_final(json_response)
+        
+        print(f"[INFO] JSON final montado: {json_final}")
         processing_jobs[job_id]["status"] = "Análise concluída!"
-        processing_jobs[job_id]["result"] = json_response
+        processing_jobs[job_id]["result"] = json_final
 
     except Exception as e:
         print(f"[ERRO] {str(e)}")
