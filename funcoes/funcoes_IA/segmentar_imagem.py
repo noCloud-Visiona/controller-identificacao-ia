@@ -73,10 +73,10 @@ def segmentar_imagens(images_path=Caminho.IMG_TILE.value):
                     print("Nuvem tela inteira")
 
                     nuvem_tela_inteira = True
-                    output_mask_path, merged_image = processar_resultado(results, imagem, nome_imagem_original, nuvem_tela_inteira)
+                    processar_resultado(results, imagem, nome_imagem_original, nuvem_tela_inteira)
                 else:
                     results = segmentar_imagem(imagem, model)
                     print("Nuvem e sombra")
                     
                     nuvem_tela_inteira = False
-                    output_mask_path, merged_image = processar_resultado(results, imagem, nome_imagem_original, nuvem_tela_inteira)
+                    processar_resultado(results, imagem, nome_imagem_original, nuvem_tela_inteira)

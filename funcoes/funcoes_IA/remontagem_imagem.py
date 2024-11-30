@@ -236,6 +236,7 @@ def apply_two_masks(image_path, mask1_path, mask2_path, output_path, color_mask1
 
     print("Salvando imagem final...")
     result_image = Image.fromarray(image_np)
+    result_image = result_image.resize((1000, 1000))
     result_image.save(output_path + ".png")
     print(f"Imagem com máscaras aplicadas salva em {output_path}.png")
 
