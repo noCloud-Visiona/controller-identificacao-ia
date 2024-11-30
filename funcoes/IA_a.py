@@ -1,6 +1,6 @@
 from funcoes.funcoes_IA.segmentar_imagem import segmentar_imagens
 from funcoes.funcoes_IA.recortar_imagem import recortar_imagem_rgb, limpar_diretorios
-from funcoes.funcoes_IA.remontagem_imagem import remontar, remontar_rgb, apply_mask_in_chunks, apply_inverse_mask_in_chunks
+from funcoes.funcoes_IA.remontagem_imagem import remontar, remontar_rgb, apply_mask_in_chunks, apply_inverse_mask_in_chunks, apply_two_masks
 from funcoes.funcoes_IA.porcentagem_nuvem import porcentagem_nuvem
 import funcoes.enums as Caminho
 import os
@@ -14,11 +14,13 @@ def IA(image):
     remontar_rgb(tile_dir=Caminho.Caminho.IMG_TILE.value, tile_height=1024, tile_width=1024, tiles_per_col=tiles[0]+1, tiles_per_row=tiles[1]+1, filler_color=(0, 0, 0), tile_name="RGB", final_file_name="imagem_PNG_montada")
     remontar_rgb(tile_dir=Caminho.Caminho.IMG_MARK.value, tile_height=1024, tile_width=1024, tiles_per_col=tiles[0]+1, tiles_per_row=tiles[1]+1, filler_color=(0, 0, 0), tile_name="RGB_shadow_mask", final_file_name="mask_shadow_PNG")
     remontar_rgb(tile_dir=Caminho.Caminho.IMG_MARK.value, tile_height=1024, tile_width=1024, tiles_per_col=tiles[0]+1, tiles_per_row=tiles[1]+1, filler_color=(0, 0, 0), tile_name="RGB_cloud_mask", final_file_name="mask_cloud_PNG")
-
+    
+    apply_two_masks(image_path="./imagem_PNG_montada.png", mask_path1="./mask_cloud_PNG.png", mask_path2="./mask_shadow_PNG.png", output_path="./imagem_PNG_montada_thumbnail", overlay_color1=(255, 0, 0, 128), overlay_color2=(0, 0, 255, 128))
     apply_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_cloud_PNG.png", output_path="./nuvem", overlay_color=(255, 0, 0, 128))
     apply_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_shadow_PNG.png", output_path="./sombra",  overlay_color=(0, 0, 255, 128))
     apply_inverse_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_cloud_PNG.png", output_path="./sem_nuvem")
     apply_inverse_mask_in_chunks(image_path="./imagem_PNG_montada.png", mask_path="./mask_shadow_PNG.png", output_path="./sem_sombra")
+
 
     remontar(img_png="./nuvem.png", tiff_path=image, final_file_name="imagem_nuvem_montada")
     remontar(img_png="./sombra.png", tiff_path=image, final_file_name="imagem_sombra_montada")
