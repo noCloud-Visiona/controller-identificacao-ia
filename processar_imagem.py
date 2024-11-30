@@ -87,13 +87,6 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
         # Enviar imagens para o bucket e obter URLs
         print("[INFO] Enviando imagens processadas para o bucket...")
 
-         # Enviar imagem "sem nuvem"
-        with open(thumbnail_imagem_tratada, 'rb') as thumbnail_imagem_tratada:
-            files = {'thumbnail_imagem_tratada': thumbnail_imagem_tratada}
-            response_thumbnail_imagem_tratada_url = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'thumbnail_imagem_tratada': files['thumbnail_imagem_tratada']})
-            thumbnail_imagem_tratada_url = response_thumbnail_imagem_tratada_url.json().get('tratada')
-            print(f"[INFO] URL da imagem sem nuvem: {thumbnail_imagem_tratada_url}")
-
         # Enviar imagem "sem nuvem"
         with open(imagem_sem_nuvem, 'rb') as sem_nuvem_image:
             files = {'imagem_sem_nuvem': sem_nuvem_image}
@@ -156,6 +149,13 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             response_thumbnail_imagem = requests.post('http://host.docker.internal:3004/upload_thumbnail_imagem_original', files={'thumbnail_imagem_original': files['thumbnail_imagem_original']})
             thumbnail_imagem_url = response_thumbnail_imagem.json().get('thumbnail_imagem_original_url')
             print(f"[INFO] URL do thumbnail da imagem original: {thumbnail_imagem_url}")
+            
+        # Enviar thumbnail tratada
+        with open(thumbnail_imagem_tratada, 'rb') as imagem_thumbnail_tratada:
+            files = {'tratada': imagem_thumbnail_tratada}
+            response_thumbnail_imagem_tratada = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'tratada': files['tratada']})
+            thumbnail_tratada_url = response_thumbnail_imagem_tratada.json().get('tratada_url')
+            print(f"[INFO] URL da imagem sem nuvem: {thumbnail_tratada_url}")
 
         # Montar o JSON final
         json_response = montar_json_response(
@@ -173,13 +173,15 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             thumbnail_nuvem_url,
             thumbnail_sombra_url,
             thumbnail_imagem_url,
-            imagem_tratada,
-            thumbnail_imagem_tratada
+            thumbnail_tratada_url,
+            imagem_tratada
         )
         
-        print(f"[INFO] JSON final montado: {json_response}")
+        json_final = enviar_json_final(json_response)
+        
+        print(f"[INFO] JSON final montado: {json_final}")
         processing_jobs[job_id]["status"] = "Análise concluída!"
-        processing_jobs[job_id]["result"] = json_response
+        processing_jobs[job_id]["result"] = json_final
 
     except Exception as e:
         print(f"[ERRO] {str(e)}")
