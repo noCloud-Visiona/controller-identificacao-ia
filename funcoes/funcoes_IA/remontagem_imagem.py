@@ -75,8 +75,14 @@ def remontar_rgb(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row
             tile, position = future.result()
             if tile:
                 imagem_final.paste(tile, position)
-    if final_file_name=="imagem_PNG_montada":
-        thumbnail = imagem_final.resize((1000, 1000))   
+    
+    if final_file_name == "imagem_PNG_montada":
+        thumbnail = imagem_final.resize((1000, 1000))
+        thumbnail = thumbnail.convert("RGBA")
+        thumbnail_np = np.array(thumbnail)
+        black_pixels = np.all(thumbnail_np[:, :, :3] == [0, 0, 0], axis=-1)
+        thumbnail_np[black_pixels] = [0, 0, 0, 0]
+        thumbnail = Image.fromarray(thumbnail_np)
         thumbnail.save(f'{final_file_name}_thumbnail_original.png')
         
     imagem_final.save(f'{final_file_name}.png')
