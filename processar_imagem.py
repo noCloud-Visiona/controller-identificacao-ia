@@ -76,7 +76,7 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
 
         # Processar a imagem recortada
         print("[INFO] Iniciando o processamento da imagem com IA...")
-        mask_path, caminho_imagem_tratada, porcentagem_nuvem, imagem_tratada = processar_imagem_com_ia(cropped_image_path)
+        imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada = processar_imagem_com_ia(cropped_image_path)
         print("[INFO] Processamento concluído.")
 
         # Obter informações de data e hora
@@ -86,25 +86,89 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
 
         # Enviar imagens para o bucket e obter URLs
         print("[INFO] Enviando imagens processadas para o bucket...")
-        with open(caminho_imagem_tratada, 'rb') as tratada_image, open(mask_path, 'rb') as nuvem_image:
-            files = {'tratada': tratada_image, 'nuvem': nuvem_image}
-            response_tratada = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'tratada': files['tratada']})
-            tratada_url = response_tratada.json().get('url')
-            print(f"[INFO] URL da imagem tratada: {tratada_url}")
+
+        # Enviar imagem "sem nuvem"
+        with open(imagem_sem_nuvem, 'rb') as sem_nuvem_image:
+            files = {'imagem_sem_nuvem': sem_nuvem_image}
+            response_sem_nuvem = requests.post('http://host.docker.internal:3004/upload_imagem_sem_nuvem', files={'imagem_sem_nuvem': files['imagem_sem_nuvem']})
+            imagem_sem_nuvem_url = response_sem_nuvem.json().get('imagem_sem_nuvem_url')
+            print(f"[INFO] URL da imagem sem nuvem: {imagem_sem_nuvem_url}")
+
+        # Enviar imagem "sem sombra"
+        with open(imagem_sem_sombra, 'rb') as sem_sombra_image:
+            files = {'imagem_sem_sombra': sem_sombra_image}
+            response_sem_sombra = requests.post('http://host.docker.internal:3004/upload_imagem_sem_sombra', files={'imagem_sem_sombra': files['imagem_sem_sombra']})
+            imagem_sem_sombra_url = response_sem_sombra.json().get('imagem_sem_sombra_url')
+            print(f"[INFO] URL da imagem sem sombra: {imagem_sem_sombra_url}")
+
+        # Enviar imagem "nuvem"
+        with open(imagem_nuvem, 'rb') as nuvem_image:
+            files = {'imagem_nuvem': nuvem_image}
+            response_nuvem = requests.post('http://host.docker.internal:3004/upload_imagem_nuvem', files={'imagem_nuvem': files['imagem_nuvem']})
+            imagem_nuvem_url = response_nuvem.json().get('imagem_nuvem_url')
+            print(f"[INFO] URL da imagem com nuvem: {imagem_nuvem_url}")
+
+        # Enviar imagem "sombra"
+        with open(imagem_sombra, 'rb') as sombra_image:
+            files = {'imagem_sombra': sombra_image}
+            response_sombra = requests.post('http://host.docker.internal:3004/upload_imagem_sombra', files={'imagem_sombra': files['imagem_sombra']})
+            imagem_sombra_url = response_sombra.json().get('imagem_sombra_url')
+            print(f"[INFO] URL da imagem com sombra: {imagem_sombra_url}")
+            
+        # Enviar thumbnail "sem nuvem"
+        with open(thumbnail_sem_nuvem, 'rb') as sem_nuvem_thumbnail:
+            files = {'thumbnail_sem_nuvem': sem_nuvem_thumbnail}
+            response_thumbnail_sem_nuvem = requests.post('http://host.docker.internal:3004/upload_thumbnail_sem_nuvem', files={'thumbnail_sem_nuvem': files['thumbnail_sem_nuvem']})
+            thumbnail_sem_nuvem_url = response_thumbnail_sem_nuvem.json().get('thumbnail_sem_nuvem_url')
+            print(f"[INFO] URL do thumbnail sem nuvem: {thumbnail_sem_nuvem_url}")
+
+        # Enviar thumbnail "sem sombra"
+        with open(thumbnail_sem_sombra, 'rb') as sem_sombra_thumbnail:
+            files = {'thumbnail_sem_sombra': sem_sombra_thumbnail}
+            response_thumbnail_sem_sombra = requests.post('http://host.docker.internal:3004/upload_thumbnail_sem_sombra', files={'thumbnail_sem_sombra': files['thumbnail_sem_sombra']})
+            thumbnail_sem_sombra_url = response_thumbnail_sem_sombra.json().get('thumbnail_sem_sombra_url')
+            print(f"[INFO] URL do thumbnail sem sombra: {thumbnail_sem_sombra_url}")
+
+        # Enviar thumbnail "nuvem"
+        with open(thumbnail_nuvem, 'rb') as nuvem_thumbnail:
+            files = {'thumbnail_nuvem': nuvem_thumbnail}
+            response_thumbnail_nuvem = requests.post('http://host.docker.internal:3004/upload_thumbnail_nuvem', files={'thumbnail_nuvem': files['thumbnail_nuvem']})
+            thumbnail_nuvem_url = response_thumbnail_nuvem.json().get('thumbnail_nuvem_url')
+            print(f"[INFO] URL do thumbnail com nuvem: {thumbnail_nuvem_url}")
+
+        # Enviar thumbnail "sombra"
+        with open(thumbnail_sombra, 'rb') as sombra_thumbnail:
+            files = {'thumbnail_sombra': sombra_thumbnail}
+            response_thumbnail_sombra = requests.post('http://host.docker.internal:3004/upload_thumbnail_sombra', files={'thumbnail_sombra': files['thumbnail_sombra']})
+            thumbnail_sombra_url = response_thumbnail_sombra.json().get('thumbnail_sombra_url')
+            print(f"[INFO] URL do thumbnail com sombra: {thumbnail_sombra_url}")
+
+        # Enviar thumbnail da imagem original
+        with open(thumbnail_imagem, 'rb') as imagem_thumbnail:
+            files = {'thumbnail_imagem_original': imagem_thumbnail}
+            response_thumbnail_imagem = requests.post('http://host.docker.internal:3004/upload_thumbnail_imagem_original', files={'thumbnail_imagem_original': files['thumbnail_imagem_original']})
+            thumbnail_imagem_url = response_thumbnail_imagem.json().get('thumbnail_imagem_original_url')
+            print(f"[INFO] URL do thumbnail da imagem original: {thumbnail_imagem_url}")
 
         # Montar o JSON final
         json_response = montar_json_response(
             json_data,
-            mask_path,
-            caminho_imagem_tratada,
-            porcentagem_nuvem,
-            imagem_tratada,
-            tratada_url,
-            mask_path,
+            percent,
             data_atual,
             hora_atual,
-            id_usuario
+            id_usuario,
+            imagem_sem_nuvem_url,
+            imagem_sem_sombra_url,
+            imagem_nuvem_url,
+            imagem_sombra_url,
+            thumbnail_sem_nuvem_url,
+            thumbnail_sem_sombra_url,
+            thumbnail_nuvem_url,
+            thumbnail_sombra_url,
+            thumbnail_imagem_url,
+            imagem_tratada
         )
+        
         print(f"[INFO] JSON final montado: {json_response}")
         processing_jobs[job_id]["status"] = "Análise concluída!"
         processing_jobs[job_id]["result"] = json_response

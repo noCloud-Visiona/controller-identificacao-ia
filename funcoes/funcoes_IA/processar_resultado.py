@@ -62,7 +62,6 @@ def processar_resultado(results, image, nome_imagem_original, nuvem_tela_inteira
         else:
             raise ValueError("Máscara personalizada não fornecida ou inválida.")
 
-    # Processar os resultados
     for result in results:
         if not result.masks:
             print("O resultado não contém máscaras.")
