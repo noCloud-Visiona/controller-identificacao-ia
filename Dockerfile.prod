@@ -1,5 +1,5 @@
-# Escolha uma imagem base compatível com o Python e o GDAL (necessário para rasterio)
-FROM python:3.10-slim
+# Escolha uma imagem base compatível com o Python
+FROM python:3.11-slim
 
 # Instala as dependências do sistema operacional necessárias para o GDAL e o rasterio
 RUN apt-get update && apt-get install -y \
@@ -8,27 +8,36 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     gdal-bin \
     libgdal-dev \
-    python3-gdal \
     --no-install-recommends && rm -rf /var/lib/apt/lists/*
 
 # Define as variáveis de ambiente necessárias para o GDAL
 ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
 ENV C_INCLUDE_PATH=/usr/include/gdal
 
+# Para garantir que nenhuma versão problemática do GDAL esteja instalada
+RUN pip uninstall -y gdal || true
+
+# Instala dependências necessárias para o GDAL
+RUN pip install numpy
+RUN pip install -U setuptools wheel
+
+# Instala uma versão específica do GDAL forçando a recompilação e ignorando o cache
+RUN pip install --no-build-isolation --no-cache-dir --force-reinstall gdal==3.6.2
+
 # Copia o arquivo requirements.txt para o container
 COPY requirements.txt .
 
-# Instala as dependências Python
+# Instala as dependências Python listadas no requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Define o diretório de trabalho do container
 WORKDIR /app
 
-# Copia o código da aplicação (opcional)
+# Copia o código da aplicação para o diretório de trabalho
 COPY . /app
 
-# Exponha a porta 3002
+# Exponha a porta 3002 (opcional, para fins de execução da aplicação)
 EXPOSE 3002
 
-# Define o ponto de entrada padrão (opcional)
+# Define o ponto de entrada padrão (opcional, define como iniciar a aplicação)
 CMD ["python", "app.py"]
