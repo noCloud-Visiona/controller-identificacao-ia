@@ -129,7 +129,7 @@ def verify_image_with_pillow(image_path):
         print("Erro ao verificar a imagem com Pillow.")
         raise ValueError(f"Erro ao verificar a imagem '{image_path}': {e}")
 
-def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=512):
+def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024):
     print("Procurando arquivos de imagem e máscara...")
     if not os.path.exists(image_path):
         raise FileNotFoundError(f"Arquivo de imagem '{image_path}' não encontrado.")
@@ -170,16 +170,25 @@ def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=
             result_chunk = cv2.bitwise_and(image_chunk_np[:, :, :3], image_chunk_np[:, :, :3], mask=inverted_mask_chunk)
             result_chunk = cv2.cvtColor(result_chunk, cv2.COLOR_RGB2BGRA)
 
-            # Tornar pixels transparentes onde a máscara é completamente preta
             transparent_pixels = (inverted_mask_chunk == 0)
             result_chunk[transparent_pixels] = [0, 0, 0, 0]
 
-            # Converter o resultado do chunk de volta para PIL e colá-lo na imagem de resultado
             result_chunk_pil = Image.fromarray(result_chunk)
             result_image.paste(result_chunk_pil, box[:2])
-    thumbnail = result_image.resize((256, 256))
-    thumbnail.save(output_path+"_thumbnail.png")
-    result_image.save(output_path+".png")
+
+    result_image_np = np.array(result_image)
+    black_pixels = np.all(result_image_np[:, :, :3] == [0, 0, 0], axis=-1)
+    result_image_np[black_pixels] = [0, 0, 0, 0]
+    result_image = Image.fromarray(result_image_np)
+
+    thumbnail = result_image.resize((1000, 1000))
+    thumbnail_np = np.array(thumbnail)
+    black_pixels_thumbnail = np.all(thumbnail_np[:, :, :3] == [0, 0, 0], axis=-1)
+    thumbnail_np[black_pixels_thumbnail] = [0, 0, 0, 0]
+    thumbnail = Image.fromarray(thumbnail_np)
+
+    thumbnail.save(output_path + "_thumbnail.png")
+    result_image.save(output_path + ".png")
     print(f"Imagem recortada com máscara inversa salva em {output_path}")
 
 
@@ -234,11 +243,15 @@ def apply_two_masks(image_path, mask1_path, mask2_path, output_path, color_mask1
             + overlay_mask2[mask2_applied, c] * alpha2[mask2_applied]
         )
 
-    print("Salvando imagem final...")
+    print("Removendo pixels completamente pretos...")
+    black_pixels = np.all(image_np[:, :, :3] == 0, axis=-1)  # Localiza onde todos os canais RGB são 0
+    image_np[black_pixels, 3] = 0  # Define o canal alfa como 0 (transparente) para esses pixels
+
+    print("Redimensionando e salvando imagem final...")
     result_image = Image.fromarray(image_np)
     result_image = result_image.resize((1000, 1000))
-    result_image.save(output_path + ".png")
-    print(f"Imagem com máscaras aplicadas salva em {output_path}.png")
+    result_image.save(output_path + ".png", "PNG")
+    print(f"Imagem com máscaras aplicadas e pixels pretos removidos salva em {output_path}.png")
 
 def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024, overlay_color=(255, 0, 0, 128)):
     print("Procurando arquivos de imagem e máscara...")
@@ -293,7 +306,7 @@ def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024, ov
             result_chunk_pil = Image.fromarray(image_chunk_np)
             result_image.paste(result_chunk_pil, box[:2])
     
-    thumbnail = result_image.resize((256, 256))
+    thumbnail = result_image.resize((1000, 1000))
     thumbnail.save(output_path + "_thumbnail.png")
     result_image.save(output_path + ".png")
     print(f"Imagem recortada salva em {output_path}")
