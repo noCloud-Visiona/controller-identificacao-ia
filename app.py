@@ -133,8 +133,8 @@ def imagem_predict(id_usuario):
         return jsonify({'error': 'Formato de imagem não suportado'}), 400
     
     # ------------------------------ Parte envolvendo tratar a imagem recebida com a IA ---------------------------------
-    mask_path, caminho_imagem_tratada, porcentagem_nuvem = IA_a.IA(image_path)
-    imagem_tratada_pela_IA = cv2.imread(caminho_imagem_tratada, cv2.IMREAD_UNCHANGED)
+    imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, thumbnail_imagem_original,percent = IA_a.IA(image_path)
+    imagem_tratada_pela_IA = cv2.imread(thumbnail_imagem_original, cv2.IMREAD_UNCHANGED)
     print(imagem_tratada_pela_IA)
 
     # ------------ Parte envolvendo a montagem do JSON para salvar no firebase e devolver a resposta --------------------
@@ -150,7 +150,7 @@ def imagem_predict(id_usuario):
     area_visivel_mapa = round(area_visivel_mapa, 2)
 
     #rota pra salvar as 2 imagens no Bucket e receber as 2 url de volta
-    with open(caminho_imagem_tratada, 'rb') as tratada_image, open(mask_path, 'rb') as nuvem_image:
+    with open(thumbnail_imagem_original, 'rb') as tratada_image, open(imagem_sem_nuvem, 'rb') as nuvem_image:
         files = {
             'tratada': tratada_image,
             'nuvem': nuvem_image
