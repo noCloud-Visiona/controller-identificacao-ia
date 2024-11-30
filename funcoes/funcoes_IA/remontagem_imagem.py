@@ -177,7 +177,7 @@ def apply_inverse_mask_in_chunks(image_path, mask_path, output_path, chunk_size=
             # Converter o resultado do chunk de volta para PIL e colá-lo na imagem de resultado
             result_chunk_pil = Image.fromarray(result_chunk)
             result_image.paste(result_chunk_pil, box[:2])
-    thumbnail = result_image.resize((256, 256))
+    thumbnail = result_image.resize((1000, 1000))
     thumbnail.save(output_path+"_thumbnail.png")
     result_image.save(output_path+".png")
     print(f"Imagem recortada com máscara inversa salva em {output_path}")
@@ -293,7 +293,7 @@ def apply_mask_in_chunks(image_path, mask_path, output_path, chunk_size=1024, ov
             result_chunk_pil = Image.fromarray(image_chunk_np)
             result_image.paste(result_chunk_pil, box[:2])
     
-    thumbnail = result_image.resize((256, 256))
+    thumbnail = result_image.resize((1000, 1000))
     thumbnail.save(output_path + "_thumbnail.png")
     result_image.save(output_path + ".png")
     print(f"Imagem recortada salva em {output_path}")
