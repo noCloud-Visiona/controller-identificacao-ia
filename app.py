@@ -31,7 +31,7 @@ limiter = Limiter(
 processing_jobs = {}
 
 @app.route('/predict/<id_usuario>', methods=['POST', 'OPTIONS'])
-@limiter.limit("20 per minute")  # Limite específico para esse endpoint
+@limiter.limit("60 per minute")  # Limite específico para esse endpoint
 def novopredict(id_usuario):
     if request.method == 'OPTIONS':
         return '', 204
@@ -48,14 +48,18 @@ def novopredict(id_usuario):
 
     # Gerar um ID único para o trabalho
     job_id = str(uuid.uuid4())
+    id_usuario = id_usuario
     processing_jobs[job_id] = {"status": "Análise em andamento, por favor aguarde uns instantes!", "result": None}
 
     # Inicializa o trabalho
-    response = requests.post('http://host.docker.internal:3004/post_job_id/id_usuario/job_id', id_usuario=id_usuario, job_id=job_id)
+    response = requests.post(
+    f'http://host.docker.internal:3004/post_job_id/{id_usuario}/{job_id}',
+    json={"id_usuario": id_usuario, "job_id": job_id})
 
     # Verificação da resposta
     if response.status_code == 201:
         response_json = response.json()
+        print(response_json)
     else:
         print("Erro ao salvar o job_id:", response.status_code, response.text)
 
@@ -72,12 +76,38 @@ def novopredict(id_usuario):
 
 @app.route('/status/<id_usuario>/<job_id>', methods=['GET'])
 def status(id_usuario, job_id):
-    job = requests.get('http://host.docker.internal:3004/get_job_id/id_usuario/job_id', id_usuario=id_usuario, job_id=job_id)
-    job_processing = processing_jobs.get(job.get('job_id'))
-    if job_processing:
-        return jsonify(job_processing), 200
-    else:
-        return jsonify({"error": "Job ID não encontrado"}), 404
+    try:
+        # Faz a requisição ao serviço externo
+        response = requests.get(f'http://host.docker.internal:3004/get_job_id/{id_usuario}/{job_id}')
+        
+        # Verifica o código de status da resposta
+        if response.status_code == 201:
+            # Tenta processar o JSON retornado
+            try:
+                job = response.json()
+            except ValueError:
+                return jsonify({"error": "Resposta do serviço externo não é um JSON válido"}), 500
+
+            # Busca o job_id no dicionário local
+            job_processing = processing_jobs.get(job.get('job_id'))
+            if job_processing:
+                return jsonify(job_processing), 200
+            else:
+                return jsonify({"error": "Job ID não encontrado"}), 404
+        else:
+            # Erro na resposta do serviço externo
+            return jsonify({
+                "error": "Erro ao obter o job do serviço externo",
+                "status_code": response.status_code,
+                "detalhes": response.text
+            }), response.status_code
+
+    except requests.exceptions.RequestException as e:
+        # Captura erros relacionados à requisição (timeout, conexão recusada, etc.)
+        return jsonify({
+            "error": "Falha ao se conectar ao serviço externo",
+            "detalhes": str(e)
+        }), 500
     
 @app.route('/imagem-predict/<id_usuario>', methods=['POST', 'OPTIONS'])
 def imagem_predict(id_usuario):
