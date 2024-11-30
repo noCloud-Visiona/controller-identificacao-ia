@@ -77,7 +77,7 @@ def remontar_rgb(tile_dir, tile_width, tile_height, tiles_per_col, tiles_per_row
                 imagem_final.paste(tile, position)
     if final_file_name=="imagem_PNG_montada":
         thumbnail = imagem_final.resize((1000, 1000))   
-        thumbnail.save(f'{final_file_name}_thumbnail.png')
+        thumbnail.save(f'{final_file_name}_thumbnail_original.png')
         
     imagem_final.save(f'{final_file_name}.png')
     print("Imagem final ajustada montada com sucesso!")

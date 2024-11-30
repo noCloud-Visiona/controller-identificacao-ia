@@ -76,7 +76,7 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
 
         # Processar a imagem recortada
         print("[INFO] Iniciando o processamento da imagem com IA...")
-        imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada = processar_imagem_com_ia(cropped_image_path)
+        imagem_sem_nuvem, imagem_sem_sombra, imagem_nuvem, imagem_sombra, thumbnail_sem_nuvem, thumbnail_sem_sombra, thumbnail_nuvem, thumbnail_sombra, thumbnail_imagem, percent, imagem_tratada, thumbnail_imagem_tratada = processar_imagem_com_ia(cropped_image_path)
         print("[INFO] Processamento concluído.")
 
         # Obter informações de data e hora
@@ -86,6 +86,13 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
 
         # Enviar imagens para o bucket e obter URLs
         print("[INFO] Enviando imagens processadas para o bucket...")
+
+         # Enviar imagem "sem nuvem"
+        with open(thumbnail_imagem_tratada, 'rb') as thumbnail_imagem_tratada:
+            files = {'thumbnail_imagem_tratada': thumbnail_imagem_tratada}
+            response_thumbnail_imagem_tratada_url = requests.post('http://host.docker.internal:3004/upload_image_tratada_png', files={'thumbnail_imagem_tratada': files['thumbnail_imagem_tratada']})
+            thumbnail_imagem_tratada_url = response_thumbnail_imagem_tratada_url.json().get('tratada')
+            print(f"[INFO] URL da imagem sem nuvem: {thumbnail_imagem_tratada_url}")
 
         # Enviar imagem "sem nuvem"
         with open(imagem_sem_nuvem, 'rb') as sem_nuvem_image:
@@ -166,7 +173,8 @@ def processar_imagem(band16_url, image_dir, json_data, job_id, processing_jobs, 
             thumbnail_nuvem_url,
             thumbnail_sombra_url,
             thumbnail_imagem_url,
-            imagem_tratada
+            imagem_tratada,
+            thumbnail_imagem_tratada
         )
         
         print(f"[INFO] JSON final montado: {json_response}")
